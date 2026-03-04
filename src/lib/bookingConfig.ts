@@ -513,6 +513,15 @@ export async function checkAvailability(date: Date, roomId: RoomId): Promise<Ava
 
 // Función para obtener precios dinámicos desde n8n
 export async function fetchJornadaPrices(date: Date, roomId: RoomId): Promise<JornadaPrices | null> {
+  // PRECIOS SALVAVIDAS POR DEFECTO:
+  // Si n8n se ahoga, se devuelve esto en lugar de bloquear la web.
+  const DEFAULT_PRICES: Record<RoomId, JornadaPrices> = {
+    atico: { dia: 99, noche: 149, dia_entero_manana: 189, dia_entero_noche: 189 },
+    estudio: { dia: 39, noche: 65, dia_entero_manana: 89, dia_entero_noche: 89 },
+    habitacion: { dia: 39, noche: 65, dia_entero_manana: 89, dia_entero_noche: 89 }
+  };
+  const fallbackPrices = DEFAULT_PRICES[roomId];
+
   try {
     const room = getRoomById(roomId);
 
@@ -533,8 +542,8 @@ export async function fetchJornadaPrices(date: Date, roomId: RoomId): Promise<Jo
     });
 
     if (!response.ok) {
-      console.error('Error obteniendo precios:', response.status);
-      return null;
+      console.error('Error obteniendo precios, usando precios salvavidas:', response.status);
+      return fallbackPrices;
     }
 
     const data = await response.json();
@@ -544,10 +553,11 @@ export async function fetchJornadaPrices(date: Date, roomId: RoomId): Promise<Jo
 
     if (Array.isArray(data) && data.length > 0) {
       pricesResponse = data[0];
-    } else if (data && typeof data === 'object') {
+    } else if (data && typeof data === 'object' && !data.message) { // Evitar el "No item to return"
       pricesResponse = data;
     } else {
-      return null;
+      console.warn("Datos vacíos o error de n8n, usando precios salvavidas.");
+      return fallbackPrices;
     }
 
     // Validar que tenga los campos necesarios y normalizar nombres
@@ -559,17 +569,18 @@ export async function fetchJornadaPrices(date: Date, roomId: RoomId): Promise<Jo
     ) {
       // Convertir a número por si vienen como texto desde Google Sheets ('150' -> 150)
       return {
-        dia: Number(pricesResponse.jornada_de_dia) || 0,
-        noche: Number(pricesResponse.jornada_de_noche) || 0,
-        dia_entero_manana: Number(pricesResponse.dia_entero_manana) || 0,
-        dia_entero_noche: Number(pricesResponse.dia_entero_noche) || 0
+        dia: Number(pricesResponse.jornada_de_dia) || fallbackPrices.dia,
+        noche: Number(pricesResponse.jornada_de_noche) || fallbackPrices.noche,
+        dia_entero_manana: Number(pricesResponse.dia_entero_manana) || fallbackPrices.dia_entero_manana,
+        dia_entero_noche: Number(pricesResponse.dia_entero_noche) || fallbackPrices.dia_entero_noche
       };
     }
 
-    return null;
+    console.warn("Faltan campos de precio, usando precios salvavidas.");
+    return fallbackPrices;
   } catch (error) {
-    console.error('Error obteniendo precios:', error);
-    return null;
+    console.error('Error crítico obteniendo precios, activando salvavidas:', error);
+    return fallbackPrices; // ¡Nunca devolvemos null, siempre el salvavidas!
   }
 }
 
