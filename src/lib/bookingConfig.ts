@@ -477,8 +477,14 @@ export async function checkAvailability(date: Date, roomId: RoomId): Promise<Ava
       console.error('Error en respuesta del webhook de disponibilidad:', response.status);
       return { events: [], availableJornadas: [] };
     }
-
-    const data = await response.json();
+    const text = await response.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : { busy: [] }; // Si está vacío (no hay eventos), simular arreglo vacío
+    } catch (e) {
+      console.warn("Respuesta no es JSON válido, asumiendo vacío:", text);
+      data = { busy: [] };
+    }
 
     // Parsear eventos del nuevo formato: { "room":"x", "busy": [{start:"...", end:"..."}] }
     let events: CalendarEvent[] = [];
@@ -506,8 +512,12 @@ export async function checkAvailability(date: Date, roomId: RoomId): Promise<Ava
 
     return { events, availableJornadas };
   } catch (error) {
-    console.error('Error verificando disponibilidad:', error);
-    return { events: [], availableJornadas: [] };
+    console.error('Error verificando disponibilidad, asumiendo todo disponible como salvavidas:', error);
+    // SALVAVIDAS: Si el webhook de disponibilidad explota o el n8n se apaga, 
+    // en lugar de bloquear la web, dejamos todas las jornadas libres por defecto
+    // para que el cliente pueda seguir avanzando y al menos intentarlo.
+    const room = getRoomById(roomId);
+    return { events: [], availableJornadas: room.jornadas.map(j => j.id) };
   }
 }
 
