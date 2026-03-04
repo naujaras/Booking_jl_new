@@ -1,0 +1,2786 @@
+{
+  "name": "Chatbot WhatsApp subagentes",
+  "nodes": [
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "PT8YhechDCnxMb6R",
+          "mode": "list",
+          "cachedResultName": "Mensajes",
+          "cachedResultUrl": "/projects/UW6FFQ31YQvquKxT/datatables/PT8YhechDCnxMb6R"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "processed": false,
+            "sessionId": "={{ $json.body.conversation.messages[0].sender.id }}",
+            "text": "={{ $json.body.content }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "processed",
+              "displayName": "processed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "optimizeBulk": false
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -2192,
+        -192
+      ],
+      "id": "a0fd006d-d53d-4aa8-b29c-d2c35ea79669",
+      "name": "Insert row"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -496,
+        -192
+      ],
+      "id": "b67d68ce-36b8-48e4-b74b-36593d20e2ad",
+      "name": "Wait",
+      "webhookId": "a6a90330-048c-4378-ab03-54aff2f06add"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "PT8YhechDCnxMb6R",
+          "mode": "list",
+          "cachedResultName": "Mensajes",
+          "cachedResultUrl": "/projects/UW6FFQ31YQvquKxT/datatables/PT8YhechDCnxMb6R"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "sessionId",
+              "keyValue": "={{ $json.sessionId }}"
+            },
+            {
+              "keyName": "processed",
+              "condition": "isFalse"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        -192
+      ],
+      "id": "6592282a-2a49-4da0-8c2c-4617fdda7f1f",
+      "name": "Get row(s)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1) Ordenamos por fecha\nitems.sort((a, b) => new Date(a.json.createdAt) - new Date(b.json.createdAt));\n\n// 2) Construimos el texto combinado\nconst lines = items.map((item, index) => {\n    return `Message ${index + 1}: ${item.json.text}`;\n});\n\n// 3) Obtenemos el sessionId del primer ítem\nconst sessionId = items[0].json.sessionId;\n\n// 4) Obtenemos accountId y conversationId desde Webhook2\nconst webhookData = $items(\"Webhook2\")[0].json.body;\n\nconst accountId = webhookData.account.id;\nconst conversationId = webhookData.conversation.id;\n\n// 5) Devolvemos un único item\nreturn [\n  {\n    json: {\n      sessionId,\n      combinedMessages: lines.join('\\n'),\n      accountId,\n      conversationId\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        -192
+      ],
+      "id": "f0c197d4-b2b1-4d1a-ae18-cf507685e00a",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {
+          "language": "es"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        -1952,
+        -16
+      ],
+      "id": "8ab0afcc-4ed4-454c-a0d6-17b25ec31c85",
+      "name": "Transcribe a recording",
+      "credentials": {
+        "openAiApi": {
+          "id": "wBsXoGzL8GqCVT1P",
+          "name": "OpenAI Naujaras"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "PT8YhechDCnxMb6R",
+          "mode": "list",
+          "cachedResultName": "Mensajes",
+          "cachedResultUrl": "/projects/UW6FFQ31YQvquKxT/datatables/PT8YhechDCnxMb6R"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "processed": false,
+            "sessionId": "={{ $json.body.conversation.messages[0].sender.id }}",
+            "text": "={{ $json.text }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "processed",
+              "displayName": "processed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "optimizeBulk": false
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -1728,
+        -16
+      ],
+      "id": "938a59aa-f55f-4208-87a9-8591a5a67c38",
+      "name": "Insert row1"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "PT8YhechDCnxMb6R",
+          "mode": "list",
+          "cachedResultName": "Mensajes",
+          "cachedResultUrl": "/projects/UW6FFQ31YQvquKxT/datatables/PT8YhechDCnxMb6R"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "sessionId",
+              "keyValue": "={{ $('Code in JavaScript').item.json.sessionId }}"
+            },
+            {
+              "keyName": "processed",
+              "condition": "isFalse"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "processed": true
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "processed",
+              "displayName": "processed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        1344,
+        -560
+      ],
+      "id": "bf72f2bc-1716-4fa9-9a47-e9abfb2e5748",
+      "name": "Update row(s)"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dateTimeTool",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        560
+      ],
+      "id": "0344b0e7-a266-41a7-92cd-6ebb68881fca",
+      "name": "Date & Time"
+    },
+    {
+      "parameters": {
+        "content": "## Revisión disponibilidad",
+        "height": 192,
+        "width": 672,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        80,
+        496
+      ],
+      "typeVersion": 1,
+      "id": "cb672437-b414-459a-b178-594495ed055e",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Crear reserva",
+        "height": 192,
+        "width": 672,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1760,
+        464
+      ],
+      "typeVersion": 1,
+      "id": "d438eedf-5b3e-4693-a09a-b62b006a1c5b",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "91fbc4c4ce05435d7146988aceb737dcd04b6c1c6648de88a8edde5b62407de3@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "ÁTICO"
+        },
+        "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', `Format: YYYY-MM-DDTHH:mm:ss.SSS+ZZ:ZZ`, 'string') }}",
+        "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', `Format: YYYY-MM-DDTHH:mm:ss.SSS+ZZ:ZZ`, 'string') }}",
+        "useDefaultReminders": false,
+        "additionalFields": {
+          "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Summary', `Nombre_arrendador`, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        2000,
+        512
+      ],
+      "id": "66b54add-6c36-411f-99e1-2a74dce4e5d4",
+      "name": "Reserva atico",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "a0IDHmQFGKQ3R7A9",
+          "name": "Calendario Naujaras"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "d4e9330a3e5bd3016772624c0edf840a8be0a83b6c8cfb567779b5fd036a1715@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "ESTUDIO"
+        },
+        "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', `Format: YYYY-MM-DDTHH:mm:ss.SSS+ZZ:ZZ`, 'string') }}",
+        "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', `Format: YYYY-MM-DDTHH:mm:ss.SSS+ZZ:ZZ`, 'string') }}",
+        "useDefaultReminders": false,
+        "additionalFields": {
+          "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Summary', `Nombre_arrendador`, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        2160,
+        512
+      ],
+      "id": "5a0200cc-ba3a-487e-8953-677a3a6e35f2",
+      "name": "Reserva estudio",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "a0IDHmQFGKQ3R7A9",
+          "name": "Calendario Naujaras"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "2484f196e7d7bcf5bc15ff2a9ff20b2125a0c7c02bac42fdd3fba82d759f1529@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "HABITACIÓN"
+        },
+        "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', `Format: YYYY-MM-DDTHH:mm:ss.SSS+ZZ:ZZ`, 'string') }}",
+        "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', `Format: YYYY-MM-DDTHH:mm:ss.SSS+ZZ:ZZ`, 'string') }}",
+        "useDefaultReminders": false,
+        "additionalFields": {
+          "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Summary', `Nombre_Arrendador`, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        2320,
+        512
+      ],
+      "id": "b691d6cd-2a73-4900-85b1-778aa4082428",
+      "name": "Reserva habitacion",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "a0IDHmQFGKQ3R7A9",
+          "name": "Calendario Naujaras"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "91fbc4c4ce05435d7146988aceb737dcd04b6c1c6648de88a8edde5b62407de3@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "ÁTICO"
+        },
+        "returnAll": true,
+        "timeMin": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('After', `Format: YYYY-MM-DDTHH:mm:ss.SSS+ZZ:ZZ`, 'string') }}",
+        "timeMax": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Before', `Format: YYYY-MM-DDTHH:mm:ss.SSS+ZZ:ZZ`, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        304,
+        544
+      ],
+      "id": "75f56c93-0836-4113-9d61-62737b16e0ba",
+      "name": "Disponibilidad ATICO",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "a0IDHmQFGKQ3R7A9",
+          "name": "Calendario Naujaras"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "d4e9330a3e5bd3016772624c0edf840a8be0a83b6c8cfb567779b5fd036a1715@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "ESTUDIO"
+        },
+        "returnAll": true,
+        "timeMin": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('After', `Format: YYYY-MM-DDTHH:mm:ss.SSS+ZZ:ZZ`, 'string') }}",
+        "timeMax": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Before', `Format: YYYY-MM-DDTHH:mm:ss.SSS+ZZ:ZZ`, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        464,
+        544
+      ],
+      "id": "cd2e1e43-3f24-434e-a5f5-4aa55e69e047",
+      "name": "Disponibilidad ESTUDIO",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "a0IDHmQFGKQ3R7A9",
+          "name": "Calendario Naujaras"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "2484f196e7d7bcf5bc15ff2a9ff20b2125a0c7c02bac42fdd3fba82d759f1529@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "HABITACIÓN"
+        },
+        "returnAll": true,
+        "timeMin": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('After', `Format: YYYY-MM-DDTHH:mm:ss.SSS+ZZ:ZZ`, 'string') }}",
+        "timeMax": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Before', `Format: YYYY-MM-DDTHH:mm:ss.SSS+ZZ:ZZ`, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        624,
+        544
+      ],
+      "id": "bc9c6256-993f-4b92-b905-bf9be1ae37f7",
+      "name": "Disponibilidad HABITACION",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "a0IDHmQFGKQ3R7A9",
+          "name": "Calendario Naujaras"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Crear fila en la tabla unicamente una vez por id_session si ya existe esa id_session no se utiliza esta herramienta nunca",
+        "dataTableId": {
+          "__rl": true,
+          "value": "ad78aydSiSrypYaL",
+          "mode": "list",
+          "cachedResultName": "Registros Naujaras",
+          "cachedResultUrl": "/projects/UW6FFQ31YQvquKxT/datatables/ad78aydSiSrypYaL"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "n_personas": 0,
+            "id_session": "={{ $json.sessionId }}",
+            "departamento": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('departamento', ``, 'string') }}",
+            "Precio": 0
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Nombre_arrendador",
+              "displayName": "Nombre_arrendador",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "DNI_arrendador",
+              "displayName": "DNI_arrendador",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Nombre_acompanante",
+              "displayName": "Nombre_acompanante",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "DNI_acompanante",
+              "displayName": "DNI_acompanante",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "departamento",
+              "displayName": "departamento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "servicios_especiales",
+              "displayName": "servicios_especiales",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "n_personas",
+              "displayName": "n_personas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fecha_entrada",
+              "displayName": "fecha_entrada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fecha_salida",
+              "displayName": "fecha_salida",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "id_session",
+              "displayName": "id_session",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Precio",
+              "displayName": "Precio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "optimizeBulk": false
+        }
+      },
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        576
+      ],
+      "id": "43fd8f33-f914-4346-969a-3b9c53d334cc",
+      "name": "Crear fila"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "ad78aydSiSrypYaL",
+          "mode": "list",
+          "cachedResultName": "Registros Naujaras",
+          "cachedResultUrl": "/projects/UW6FFQ31YQvquKxT/datatables/ad78aydSiSrypYaL"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id_session",
+              "keyValue": "={{ $json.sessionId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "n_personas": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('n_personas', ``, 'number') }}",
+            "Nombre_arrendador": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Nombre_arrendador', ``, 'string') }}",
+            "DNI_arrendador": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('DNI_arrendador', ``, 'string') }}",
+            "Nombre_acompanante": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Nombre_acompanante', ``, 'string') }}",
+            "DNI_acompanante": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('DNI_acompanante', ``, 'string') }}",
+            "departamento": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('departamento', ``, 'string') }}",
+            "servicios_especiales": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('servicios_especiales', ``, 'string') }}",
+            "fecha_entrada": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fecha_entrada', ``, 'string') }}",
+            "fecha_salida": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fecha_salida', ``, 'string') }}",
+            "id_session": "={{ $json.sessionId }}",
+            "Precio": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Precio', `Solo el número, sin formato de moneda (€, $, EUR, USD)`, 'number') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Nombre_arrendador",
+              "displayName": "Nombre_arrendador",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "DNI_arrendador",
+              "displayName": "DNI_arrendador",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Nombre_acompanante",
+              "displayName": "Nombre_acompanante",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "DNI_acompanante",
+              "displayName": "DNI_acompanante",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "departamento",
+              "displayName": "departamento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "servicios_especiales",
+              "displayName": "servicios_especiales",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "n_personas",
+              "displayName": "n_personas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fecha_entrada",
+              "displayName": "fecha_entrada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fecha_salida",
+              "displayName": "fecha_salida",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "id_session",
+              "displayName": "id_session",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Precio",
+              "displayName": "Precio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1,
+      "position": [
+        1344,
+        576
+      ],
+      "id": "c2275c64-c931-4360-8d8c-68ccc49e4288",
+      "name": "Actualizar fila"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "ad78aydSiSrypYaL",
+          "mode": "list",
+          "cachedResultName": "Registros Naujaras",
+          "cachedResultUrl": "/projects/UW6FFQ31YQvquKxT/datatables/ad78aydSiSrypYaL"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id_session",
+              "keyValue": "={{ $json.sessionId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1,
+      "position": [
+        1056,
+        576
+      ],
+      "id": "1ec462fe-bfc4-4412-a1a7-07e302370ab9",
+      "name": "Revisar fila"
+    },
+    {
+      "parameters": {
+        "content": "## DATA TABLE",
+        "height": 224,
+        "width": 448
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1024,
+        480
+      ],
+      "typeVersion": 1,
+      "id": "5641289f-b73f-436f-b8b6-bbc216587878",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## Creación del contrato",
+        "height": 224,
+        "width": 336,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1728,
+        -160
+      ],
+      "typeVersion": 1,
+      "id": "998de80f-c594-4a4e-8857-3b356aa13476",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "2cArCaRY8EwM9EhS",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/2cArCaRY8EwM9EhS",
+          "cachedResultName": "Contrato"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1856,
+        -64
+      ],
+      "id": "52913304-a542-4b51-aae3-68d59c3f9359",
+      "name": "Call 'Contrato'"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "CHATGPT-4O-LATEST"
+        },
+        "text": "Revisa si el contrato está firmado por el arrendatario o no. La firma está abajo de la imagen en la parte izquierda.\n\nDevuelve unicamente \"Contrato firmado\" si el contrato firmado o \"Contrato no firmado\" sino lo está",
+        "imageUrls": "={{ $json.image_urls_str }}",
+        "options": {
+          "detail": "low"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -960,
+        176
+      ],
+      "id": "30fd98ff-7769-41c5-aeb5-e93adce39f10",
+      "name": "Analyze image1",
+      "credentials": {
+        "openAiApi": {
+          "id": "wBsXoGzL8GqCVT1P",
+          "name": "OpenAI Naujaras"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "={{ $now }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1dXiPTAjVftmAlIiGaUWAHUdlq6w_1GQT",
+          "mode": "list",
+          "cachedResultName": "Contratos JL",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1dXiPTAjVftmAlIiGaUWAHUdlq6w_1GQT"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -2000,
+        176
+      ],
+      "id": "5b25a637-bc03-4ac7-b9b8-5558fc6b6029",
+      "name": "Upload file1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YAslitlKgFVdjSGC",
+          "name": "Google Drive Naujaras"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "share",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "permissionsUi": {
+          "permissionsValues": {
+            "role": "reader",
+            "type": "anyone"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1792,
+        176
+      ],
+      "id": "cbf7f311-fcde-45de-90c0-bef11192e51a",
+      "name": "Share file1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YAslitlKgFVdjSGC",
+          "name": "Google Drive Naujaras"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "500bf707-57b5-457f-8830-0c5e98f7858c",
+              "name": "downloadUrl",
+              "value": "=https://drive.google.com/uc?export=download&id={{$node[\"Upload file1\"].json[\"id\"]}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1584,
+        176
+      ],
+      "id": "9583bb96-d121-46b3-bd83-5654f5b9b0ff",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "operation": "Convert from PDF",
+        "url": "={{ $json.downloadUrl }}",
+        "convertType": "toJpg",
+        "advancedOptions_Image": {}
+      },
+      "type": "n8n-nodes-pdfco.PDFco Api",
+      "typeVersion": 1,
+      "position": [
+        -1360,
+        176
+      ],
+      "id": "6a33ef2a-3037-48a7-9ada-4f62c9b7438e",
+      "name": "PDFco Api",
+      "credentials": {
+        "pdfcoApi": {
+          "id": "qYKJU1O9mVlrKt5L",
+          "name": "PDF.co account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "85fe2156-b2f3-46f9-a19d-bfc8325654ac",
+              "name": "image_urls_str",
+              "value": "={{ ($json.body || []).join(',') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1168,
+        176
+      ],
+      "id": "269bdd4f-57bc-4665-864f-134fa0516fa3",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "PT8YhechDCnxMb6R",
+          "mode": "list",
+          "cachedResultName": "Mensajes",
+          "cachedResultUrl": "/projects/UW6FFQ31YQvquKxT/datatables/PT8YhechDCnxMb6R"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "processed": false,
+            "sessionId": "={{ $json.body.conversation.messages[0].sender.id }}",
+            "text": "={{ $json.content }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "processed",
+              "displayName": "processed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "optimizeBulk": false
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        176
+      ],
+      "id": "fc68ca46-3fc3-47df-92d1-47e2ae5b0b77",
+      "name": "Insert row2"
+    },
+    {
+      "parameters": {
+        "content": "## Revisión precios",
+        "height": 224,
+        "width": 672,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        80,
+        752
+      ],
+      "typeVersion": 1,
+      "id": "819434a7-ffe4-4e19-b19a-bbdb52a32a20",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1ANK0cwO_dOXhnc45lAGTvX2YdkCpYU0Ymgz4Gsy1ruM",
+          "mode": "list",
+          "cachedResultName": "Precios departamentos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ANK0cwO_dOXhnc45lAGTvX2YdkCpYU0Ymgz4Gsy1ruM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 204703590,
+          "mode": "list",
+          "cachedResultName": "atico",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ANK0cwO_dOXhnc45lAGTvX2YdkCpYU0Ymgz4Gsy1ruM/edit#gid=204703590"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "fecha",
+              "lookupValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('values0_Value', `Buscar por fecha en formato \"01/11/2025\" (DD/MM/YYYY)`, 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        320,
+        816
+      ],
+      "id": "6e40b789-3078-4112-9605-3f1296f0740e",
+      "name": "Precios atico",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "KdmIe5c8bfKLawXV",
+          "name": "Sheets Naujaras"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1ANK0cwO_dOXhnc45lAGTvX2YdkCpYU0Ymgz4Gsy1ruM",
+          "mode": "list",
+          "cachedResultName": "Precios departamentos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ANK0cwO_dOXhnc45lAGTvX2YdkCpYU0Ymgz4Gsy1ruM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 685167537,
+          "mode": "list",
+          "cachedResultName": "estudio",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ANK0cwO_dOXhnc45lAGTvX2YdkCpYU0Ymgz4Gsy1ruM/edit#gid=685167537"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "fecha",
+              "lookupValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('values0_Value', `Buscar por fecha en formato \"01/11/2025\" (DD/MM/YYYY)`, 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        480,
+        816
+      ],
+      "id": "36217c57-d0e6-4d3b-bab2-9c209e2ae9ce",
+      "name": "Precios estudio",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "KdmIe5c8bfKLawXV",
+          "name": "Sheets Naujaras"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1ANK0cwO_dOXhnc45lAGTvX2YdkCpYU0Ymgz4Gsy1ruM",
+          "mode": "list",
+          "cachedResultName": "Precios departamentos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ANK0cwO_dOXhnc45lAGTvX2YdkCpYU0Ymgz4Gsy1ruM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1190609053,
+          "mode": "list",
+          "cachedResultName": "habitacion",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ANK0cwO_dOXhnc45lAGTvX2YdkCpYU0Ymgz4Gsy1ruM/edit#gid=1190609053"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "fecha",
+              "lookupValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('values0_Value', `Buscar por fecha en formato \"01/11/2025\" (DD/MM/YYYY)`, 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        640,
+        816
+      ],
+      "id": "042aa10f-9c3f-4545-bfbd-220da820c5e1",
+      "name": "Precios habitacion",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "KdmIe5c8bfKLawXV",
+          "name": "Sheets Naujaras"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.stripe.com/v1/payment_links",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "stripeApi",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "specifyBody": "string",
+        "body": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Body', `line_items[0][price_data][currency]=EUR&line_items[0][price_data][unit_amount]=\"Poner precio de la tabla en centimos\"&line_items[0][price_data][product_data][name]=\"Poner Reserva + tipo de departamento\"&line_items[0][quantity]=1`, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.3,
+      "position": [
+        2272,
+        -80
+      ],
+      "id": "caa80d7a-75e4-4afe-b424-608343d968f5",
+      "name": "Pago reserva",
+      "credentials": {
+        "stripeApi": {
+          "id": "j5wEztpgdxpznjQW",
+          "name": "Stripe JLM IA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "17cc1ae1-6a27-4a4b-8f10-078e1393aa51",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1856,
+        928
+      ],
+      "id": "9a1507ec-362d-4c5e-b207-16c56bb3a98d",
+      "name": "Webhook",
+      "webhookId": "17cc1ae1-6a27-4a4b-8f10-078e1393aa51"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.stripe.com/v1/payment_links",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "stripeApi",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "specifyBody": "string",
+        "body": "line_items[0][price_data][currency]=EUR&line_items[0][price_data][unit_amount]=150&line_items[0][price_data][product_data][name]=Servicio personalizado&line_items[0][quantity]=1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -832,
+        2000
+      ],
+      "id": "827ced42-9572-4024-bc85-166e859cffaa",
+      "name": "HTTP Request",
+      "credentials": {
+        "stripeApi": {
+          "id": "j5wEztpgdxpznjQW",
+          "name": "Stripe JLM IA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Generar link stripe",
+        "height": 224,
+        "width": 336,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2144,
+        -160
+      ],
+      "typeVersion": 1,
+      "id": "b32911cf-adfb-435b-bb35-3dfe44b108ab",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "## Confirmación de pago en Stripe",
+        "height": 304,
+        "width": 896,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1968,
+        832
+      ],
+      "typeVersion": 1,
+      "id": "4c9e8160-617f-42cb-b54e-52949d66ed89",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Function node en n8n\n\nreturn items.map(item => {\n  const body = item.json.body || {};\n  const payment = (body.data && body.data.object) ? body.data.object : {};\n\n  const amount = payment.amount;\n  const status = payment.status;\n\n  if (typeof amount === 'number' && status === 'succeeded') {\n    // Stripe envía el importe en céntimos\n    const euros = (amount / 100).toFixed(2).replace('.', ','); // 150 -> \"1,50\"\n\n    const mensaje = `Mensaje de Stripe: Hemos recibido correctamente un pago de ${euros} €`;\n\n    item.json.mensaje = mensaje;\n    item.json.amount = amount;\n    item.json.status = status;\n\n  } else {\n    // Pagos NO OK (fallidos, cancelados, etc.)\n    const estado = status || 'desconocido';\n    item.json.mensaje = `Mensaje de Stripe: el pago no se ha completado (estado: ${estado}).`;\n    item.json.amount = amount;\n    item.json.status = status;\n  }\n\n  return item;\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1648,
+        928
+      ],
+      "id": "c5613376-1bf7-4403-b0fb-b343515d09c4",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2a23f474-fc67-4022-91cd-2fe0d306881d",
+              "name": "combinedMessages",
+              "value": "={{ $json.combinedMessages }}",
+              "type": "string"
+            },
+            {
+              "id": "228b07f1-3246-4ea7-be62-f985178f8b9d",
+              "name": "sessionId",
+              "value": "={{ $json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "a41c319c-0d62-462e-8b9f-b18ec59f900f",
+              "name": "=accountId",
+              "value": "={{ $json.accountId }}",
+              "type": "number"
+            },
+            {
+              "id": "4fdf8ef6-90af-43ca-b7b3-6fcac018c2f8",
+              "name": "conversationId",
+              "value": "={{ $json.conversationId }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        144,
+        -192
+      ],
+      "id": "3d3800d2-11cc-4d28-a2c4-38c8b26e6beb",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9906db1c-15dc-48d4-960f-b8c737111699",
+              "name": "=combinedMessages",
+              "value": "={{ $('Code in JavaScript1').item.json.mensaje }}",
+              "type": "string"
+            },
+            {
+              "id": "d2d8075b-0a24-4f7e-b068-7b93c826ec45",
+              "name": "sessionId",
+              "value": "={{ $json.sessionId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1264,
+        928
+      ],
+      "id": "77d1fa6b-6289-4ca6-b812-c30d5a4b4ebb",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.sessionId }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        480,
+        -496
+      ],
+      "id": "cb4df4ce-f050-40af-acf0-ff95c85c3398",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        384,
+        -368
+      ],
+      "id": "15ffb835-7035-4d64-a706-27890833e4b7",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "wBsXoGzL8GqCVT1P",
+          "name": "OpenAI Naujaras"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "PT8YhechDCnxMb6R",
+          "mode": "list",
+          "cachedResultName": "Mensajes",
+          "cachedResultUrl": "/projects/UW6FFQ31YQvquKxT/datatables/PT8YhechDCnxMb6R"
+        },
+        "matchType": "allConditions",
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -1440,
+        928
+      ],
+      "id": "982eca90-82e6-4b93-b113-3fa2ac803270",
+      "name": "Get row(s)1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "965875a5-5a05-4097-9a1e-ac5d90c9c05a",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -3888,
+        176
+      ],
+      "id": "f1e01754-68db-4498-a22c-052127580906",
+      "name": "Webhook2",
+      "webhookId": "965875a5-5a05-4097-9a1e-ac5d90c9c05a"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://web.wazend.net/api/v1/accounts/{{ $('Edit Fields').item.json.accountId }}/conversations/{{ $('Edit Fields').item.json.conversationId }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api_access_token",
+              "value": "=utw4Yk9M18CpHaCkcCfzVVy4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"content\": \"Mensaje: {{ $json.output[0].content[0].text }}\",\n  \"message_type\": \"outgoing\",\n  \"content_type\": \"text\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1328,
+        -816
+      ],
+      "id": "f1caebc0-9bea-490d-b497-bc281e3c41f7",
+      "name": "Respuesta1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://web.wazend.net/api/v1/accounts/{{ $json.accountId }}/conversations/{{ $json.conversationId }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api_access_token",
+              "value": "utw4Yk9M18CpHaCkcCfzVVy4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('JSON', `{\n  \"content\": \"{{MESSAGE}}\",\n  \"message_type\": \"outgoing\",\n  \"content_type\": \"text\"\n}`, 'json') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.3,
+      "position": [
+        1472,
+        -64
+      ],
+      "id": "7bbdf338-0274-4d9d-b075-4692bac9590c",
+      "name": "Mensaje de espera"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "fed5e850-29e3-40ad-85eb-a736d2bc7f57",
+              "leftValue": "={{ $json.body.content_type }}",
+              "rightValue": "text",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "e8cd6be1-7f5b-4368-944a-3510b7830050",
+              "leftValue": "={{ $json.body.content }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2912,
+        144
+      ],
+      "id": "c627fe6c-1d17-4d5a-b7f2-32384d2f5389",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "000d8337-00d2-46c7-8c02-da9634c9c9c8",
+              "leftValue": "={{ $json.body.conversation.messages[0].attachments[0].file_type }}",
+              "rightValue": "audio",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2704,
+        256
+      ],
+      "id": "f9382fee-769d-4fbd-b981-b681afcb3bdf",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.body.attachments[0].data_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -2192,
+        -16
+      ],
+      "id": "cf056d6e-828d-481a-baa4-2b357f7bd8b6",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "content": "## RECORDATORIO DE CAMBIO",
+        "height": 272,
+        "width": 224
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1424,
+        64
+      ],
+      "typeVersion": 1,
+      "id": "c90ec8ca-9500-4a2c-aedd-f62cee541c26",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.body.attachments[0].data_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -2192,
+        176
+      ],
+      "id": "072d2ab5-bc28-4ddb-8f1d-b9106f89667e",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://web.wazend.net/api/v1/accounts/{{ $('Edit Fields').item.json.accountId }}/conversations/{{ $('Edit Fields').item.json.conversationId }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api_access_token",
+              "value": "=utw4Yk9M18CpHaCkcCfzVVy4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"content\": \"Ha habido un fallo al procesar tu solicitud, intentalo de nuevo por favor\",\n  \"message_type\": \"outgoing\",\n  \"content_type\": \"text\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1344,
+        -384
+      ],
+      "id": "69ceb3b0-ba20-4294-9473-74811136745f",
+      "name": "Respuesta"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4522eb17-78b4-43d6-ad0f-4ec0004a6b2b",
+              "leftValue": "={{ $json.body.conversation.messages[0].sender_type }}",
+              "rightValue": "=AgentBot",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -3600,
+        176
+      ],
+      "id": "dd5f3bef-c17b-402f-bc1e-f085e6c180a3",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "={{ $json.output }}"
+            },
+            {
+              "role": "system",
+              "content": "Eres un \"JSON String Sanitizer\" y corrector de estilo.\n\nTu tarea es recibir el texto generado por otro agente y devolverlo perfectamente formateado para ser insertado en el campo `body` de un JSON.\n\n## REGLAS CRÍTICAS DE SALIDA:\n\n1. **NO Saltos de Línea Reales:** Tu respuesta debe ser visualmente **una sola línea infinita**.\n   - Reemplaza cualquier salto de línea físico (Enter) por la secuencia literal `\\n`.\n   - Ejemplo: Si entra \"Hola[Enter]Mundo\", tú devuelves `Hola\\nMundo`.\n\n2. **Eliminar Duplicados:** Si el input contiene el mismo mensaje o párrafo repetido dos veces, BORRA la repetición y deja solo una versión coherente y concisa.\n\n3. **Escapado de Caracteres:**\n   - Si el texto contiene comillas dobles (`\"`), cámbialas por comillas simples (`'`) o escápalas (`\\\"`) para no romper el JSON.\n\n4. **Output Puro:**\n   - Devuelve **SOLAMENTE** el texto procesado.\n   - NO añadas comillas al principio ni al final.\n   - NO uses bloques de código markdown (```json).\n\n## Ejemplo:\n**Input:**\n\"Hola, tengo una oferta.\nOferta de ático.\n\nHola, tengo una oferta.\nOferta de ático.\"\n\n**Tu Output:**\nHola, tengo una oferta.\\nOferta de ático."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        672,
+        -704
+      ],
+      "id": "3f6b234f-e291-4984-86c0-d4fe6b5beae1",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "wBsXoGzL8GqCVT1P",
+          "name": "OpenAI Naujaras"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4522eb17-78b4-43d6-ad0f-4ec0004a6b2b",
+              "leftValue": "={{ $json.body.sender.phone_number }}",
+              "rightValue": "=+3467722216",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "00f68db0-4441-4ed0-965e-41fe18b6cf84",
+              "leftValue": "={{ $json.body.sender.phone_number }}",
+              "rightValue": "+34655312243",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -3280,
+        160
+      ],
+      "id": "60968b30-52d9-4565-ac1f-3eca9c36b6a8",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Calcula disponibilidad y precios para una estancia y fecha concreta. Lo llama el orquestador cuando ya tiene: estancia clara, fecha (o rango acotado) y necesita saber qué jornadas hay libres y su importe. No habla con el cliente; solo devuelve datos estructurados.\n\n## Tools\n- Date & Time (resuelve fechas relativas en Europe/Madrid)\n- Disponibilidad {atico, estudio, habitacion} (Google Calendar)\n- Precios {atico, estudio, habitacion} (Google Sheets)",
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Prompt__User_Message_', ``, 'string') }}",
+        "options": {
+          "systemMessage": "## System Prompt\nEres el subagente de **Disponibilidad y Precios** para Naujaras Sevilla. Solo te habla el orquestador (nunca el cliente). Objetivo: devolver disponibilidad y precios por jornada para una estancia y una fecha concreta.\n\nFlujo de trabajo:\n- Entrada obligatoria: `estancia` (`atico|estudio|habitacion`) y una fecha clara. Si falta, responde `{\"error\":\"falta_estancia_o_fecha\"}` sin llamar a tools.\n- Resuelve fechas relativas con la tool **Date & Time** (zona `Europe/Madrid`) y trabaja internamente con `YYYY-MM-DD`.\n- Construye el rango diario local: start `YYYY-MM-DDT00:00:00.000+ZZ:ZZ`, end `YYYY-MM-DDT23:59:59.999+ZZ:ZZ`.\n- Consulta el calendario de la estancia para ese día. Un evento que se solape con un tramo bloquea esa jornada (marca `ocupado_calendario`).\n- Consulta la hoja de precios de la estancia con fecha `DD/MM/YYYY`. Cada columna es el **precio en euros por jornada**. Ejemplo de fila:\n```\n{\"row_number\":63,\"fecha\":\"01/01/2026\",\"jornada_de_dia\":2,\"jornada_de_noche\":2,\"dia_entero_manana\":2,\"dia_entero_noche\":2}\n```\nEn este caso cada jornada cuesta 2€.\n\nJornadas y horarios por estancia:\n- Ático: `dia` 13:00–20:00; `noche` 22:00–11:00; `entero_manana` 13:00–11:00; `entero_noche` 22:00–20:00.\n- Estudio: `dia` 11:30–18:30; `noche` 20:00–10:00; `entero_manana` 11:30–10:00; `entero_noche` 20:00–18:30.\n- Habitación: `dia` 13:30–19:30; `noche` 21:00–12:00; `entero_manana` 13:30–12:00; `entero_noche` 21:00–19:30.\n\nReglas de disponibilidad y precio:\n- Devuelve siempre las cuatro jornadas con su horario fijo. Si llega `jornada` solicitada, igual calcula todas pero el orquestador filtrará.\n- Si el calendario bloquea una jornada, pon `disponible:false`, `precio_eur:null`, `motivo:\"ocupado_calendario\"` (aunque exista precio).\n- Si no hay precio para la fecha/columna, pon `disponible:false`, `precio_eur:null`, `motivo:\"precio_no_definido\"` (aunque el calendario esté libre).\n- Si ambas condiciones están bien, `disponible:true`, `precio_eur` numérico en euros y `motivo:\"\"`.\n- Usa números, no strings, para los precios. No inventes precios ni horarios.\n\nErrores y consistencia:\n- Si una tool falla, responde `{\"error\":\"tool_failed\",\"detalle\":\"...\"}`.\n- Mantén zona `Europe/Madrid` para cualquier cálculo de horario.\n\nSalida requerida:\n- Devuelve SIEMPRE JSON compacto en una sola línea, sin texto extra ni emojis. Formato:\n```\n{\"fecha_iso\":\"YYYY-MM-DD\",\"estancia\":\"atico|estudio|habitacion\",\"jornadas\":[{\"tipo\":\"dia|noche|entero_manana|entero_noche\",\"horario\":\"HH:MM–HH:MM\",\"disponible\":true/false,\"precio_eur\":number|null,\"motivo\":\"\"|\"ocupado_calendario\"|\"precio_no_definido\"}]}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        -128,
+        224
+      ],
+      "id": "4c5b9210-ae99-4fe7-8259-150e6632d86c",
+      "name": "Disponibilidad/Precios"
+    },
+    {
+      "parameters": {
+        "toolDescription": "## Descripcion\nGestiona la tabla Registros Naujaras. Lo llama el orquestador cada vez que debe revisar, crear o actualizar la fila de sesión con nuevos datos (estancia, fecha, jornada, extras, personas, DNIs, precio, etc.). No interactúa con el cliente; solo sincroniza datos y devuelve el estado final.\n\n## Tools\n- Revisar fila (Registros Naujaras)\n- Crear fila (Registros Naujaras)\n- Actualizar fila (Registros Naujaras)",
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Prompt__User_Message_', ``, 'string') }}",
+        "options": {
+          "systemMessage": "## System Prompt\nEres el subagente de **Datos/Registro** para Naujaras Sevilla. Te habla únicamente el orquestador. Objetivo: mantener consistente la fila de la tabla `Registros Naujaras` usando la clave `id_session`. No pides datos al cliente ni generas texto libre.\n\nFlujo de trabajo:\n- Valida que llegue `id_session`; si falta, responde solo `{\"error\":\"falta_id_session\"}` y no llames a tools.\n- Llama a **Revisar fila** para obtener el estado actual. Si no existe fila, crea una base mínima con **Crear fila** usando `id_session` y los campos recibidos.\n- Aplica los cambios con **Actualizar fila** de forma idempotente: repetir la misma petición no debe duplicar filas ni perder datos existentes.\n- Preserva datos previos: no borres ni sobrescribas con valores vacíos los campos que no se envían. Solo actualiza lo que llega en la solicitud.\n\nCampos esperados y formatos (usa los que lleguen, no inventes):\n- `departamento`: `atico|estudio|habitacion`.\n- `fecha` (dia de reserva) en `YYYY-MM-DD` si llega así.\n- `jornada`: `dia|noche|entero_manana|entero_noche`.\n- `horario`: objetos `start` y `end` en ISO con zona `Europe/Madrid` si llegan.\n- Extras: `decoracion` (`romantica|cumple|aniversario|null`), `pack_romantico` (bool), `personas_extra` (int).\n- Datos personales: `arrendador_nombre`, `arrendador_dni`, `acompanante_nombre`, `acompanante_dni`, `n_personas` (int).\n- Precio: `precio_eur` (number, euros), `servicios_especiales` (texto), `notas` (texto).\n- Estados y enlaces: `contrato_estado` (`pendiente|enviado|firmado`), `pago_estado` (`pendiente|pagado|fallido`), `enlace_stripe`, `id_evento_calendario`.\n\nErrores y consistencia:\n- Si una tool falla, devuelve `{\"error\":\"tool_failed\",\"detalle\":\"...\"}`.\n- Mantén tipos coherentes (números como números, fechas/horarios en ISO si llegan, strings limpias). No cambies el formato de campos que ya existan en la fila.\n\nSalida requerida:\n- Devuelve SIEMPRE JSON compacto en una sola línea con el estado final tras tus operaciones: `{\"id_session\":\"...\",\"row\":{...}}`.\n- Sin saltos de línea reales, sin emojis, sin texto adicional.\n\n## Tools\n- Revisar fila (Registros Naujaras)\n- Crear fila (Registros Naujaras)\n- Actualizar fila (Registros Naujaras)"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        912,
+        240
+      ],
+      "id": "899c591c-8152-43c6-92c6-80c6dd471162",
+      "name": "Datos/Registro"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Crea la reserva en calendario cuando el orquestador ya confirmó contrato y pago. Lo llama el orquestador con la estancia, fecha y jornada elegida para insertar el evento en Google Calendar correspondiente. No habla con el cliente; solo devuelve el resultado de la creación.\n\n## Tools\n- Reserva atico (creacion evento)\n- Reserva estudio (creacion evento)\n- Reserva habitacion (creacion evento)",
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Prompt__User_Message_', ``, 'string') }}",
+        "options": {
+          "systemMessage": "# Subagente Reserva\n\n## Descripcion\nCrea la reserva en calendario cuando el orquestador ya confirmó contrato y pago. Lo llama el orquestador con la estancia, fecha y jornada elegida para insertar el evento en Google Calendar correspondiente. No habla con el cliente; solo devuelve el resultado de la creación.\n\n## Tools\n- Reserva atico (creacion evento)\n- Reserva estudio (creacion evento)\n- Reserva habitacion (creacion evento)\n\n## System Prompt\nEres el subagente de **Reserva** para Naujaras Sevilla. Interactúas solo con el orquestador. Debes crear el evento de reserva en el calendario correcto.\n\nFlujo de trabajo:\n- Entrada obligatoria: `estancia` (`atico|estudio|habitacion`), `fecha` (`YYYY-MM-DD`), `jornada` (`dia|noche|entero_manana|entero_noche`), `horario` con `start` y `end` en ISO (zona `Europe/Madrid`), `id_session`. Opcionales: nombre cliente, n_personas, precio_eur, notas.\n- Precondiciones (aseguradas por el orquestador): contrato enviado/firmado y pago confirmado. No las revalides.\n- Selecciona la tool de reserva según la estancia y crea el evento con los valores de `start`/`end` recibidos (no recalcules). Incluye en el cuerpo/descripcion: `id_session`, estancia, jornada, n_personas, precio_eur si llega, enlace_stripe o id_evento previo si aplica.\n- Idempotencia: si la tool ofrece upsert, úsalo; si no, intenta detectar duplicados por `id_session` en la descripcion para no crear eventos repetidos en reintentos.\n\nHorarios de referencia (no recalcules si ya llegan):\n- Ático: `dia` 13:00–20:00; `noche` 22:00–11:00; `entero_manana` 13:00–11:00; `entero_noche` 22:00–20:00.\n- Estudio: `dia` 11:30–18:30; `noche` 20:00–10:00; `entero_manana` 11:30–10:00; `entero_noche` 20:00–18:30.\n- Habitación: `dia` 13:30–19:30; `noche` 21:00–12:00; `entero_manana` 13:30–12:00; `entero_noche` 21:00–19:30.\n\nErrores y consistencia:\n- Si falta estancia/fecha/jornada/horario o `id_session`, responde `{\"error\":\"falta_dato_obligatorio\"}` y no crees evento.\n- Si la tool falla, responde `{\"error\":\"tool_failed\",\"detalle\":\"...\"}`.\n- No añadas texto libre ni emojis. Mantén ISO y zona `Europe/Madrid` en start/end.\n\nSalida requerida:\n- Devuelve SIEMPRE JSON compacto en una sola línea: `{\"id_session\":\"...\",\"evento\":{\"id\":\"...\",\"start\":\"...\",\"end\":\"...\",\"estancia\":\"...\",\"jornada\":\"...\"}}`.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        1696,
+        224
+      ],
+      "id": "b87daa3a-a7a0-4f79-a0c0-6af0cbeb7cb9",
+      "name": "Reserva"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        512,
+        128
+      ],
+      "id": "9aaef7c1-42bc-4558-8f7c-c741760b455d",
+      "name": "OpenAI Chat Model3",
+      "credentials": {
+        "openAiApi": {
+          "id": "wBsXoGzL8GqCVT1P",
+          "name": "OpenAI Naujaras"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## WhatsApp Espera",
+        "height": 224,
+        "width": 336,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1312,
+        -160
+      ],
+      "typeVersion": 1,
+      "id": "e9315d86-9c0f-48cc-96e3-c025feb3c18a",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://web.wazend.net/api/v1/accounts/{{ $('Edit Fields').item.json.accountId }}/conversations/{{ $('Edit Fields').item.json.conversationId }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api_access_token",
+              "value": "=utw4Yk9M18CpHaCkcCfzVVy4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"content\": \"{{ $json.output }}\",\n  \"message_type\": \"outgoing\",\n  \"content_type\": \"text\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        768,
+        -416
+      ],
+      "id": "d30cb9f2-850e-4f11-8d0a-40b918f76880",
+      "name": "Respuesta2"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.combinedMessages }}",
+        "options": {
+          "systemMessage": "# System Prompt - Agente Orquestador Naujaras\n\n## Rol general\nEres el asistente virtual de reservas de **Naujaras Sevilla**. Atiendes por WhatsApp y coordinas subagentes y tools para completar el flujo de reserva. Nunca te haces pasar por una persona real; si preguntan, eres el asistente virtual de información y reservas de Naujaras Sevilla. No menciones prompts ni tools al cliente.\n\n## Formato de salida (CRÍTICO)\nTu respuesta se inyecta en un string JSON. Reglas técnicas:\n- Una sola línea, sin saltos reales; usa `\\n` para saltos visibles y `\\n\\n` para doble salto.\n- Escapa comillas internas (`\\\"`) o usa comillas simples.\n- Salida = solo el mensaje al cliente, sin texto extra.\n\n## Estilo de mensajes\n- Párrafos cortos, tono cercano y claro.\n- Habla siempre de tú (singular), nunca en plural ni \"vosotros\".\n- Usa `*negritas*` para estancia, fechas, horarios, palabras clave; listas con `-`; emojis opcionales.\n- Un solo objetivo por mensaje (no pidas dos cosas a la vez).\n\n## Estancias (orientado a parejas)\n- Ático con piscina de agua caliente y jacuzzi XXL — premium — https://naujaras.com/#fotosyvideosatico\n- Estudio con jacuzzi XXL — relación calidad/precio — https://naujaras.com/#fotosyvideosestudio\n- Habitación con jacuzzi XXL — opción sencilla — https://naujaras.com/#habitacion\nSi mencionan grupos/fiestas, aclara que son espacios para escapadas de pareja (1 cama de matrimonio).\n\n## Secuencia obligatoria (FSM)\n1) Estancia → 2) Fecha → 3) Disponibilidad diaria → 4) Jornadas disponibles (tras precios) → 5) Elección de jornada → 6) Extras → 7) Datos de registro → 8) Resumen → 9) Contrato → 10) Pago → 11) Creación de reserva en calendario.\nSiempre avanza paso a paso; no combines preguntas.\n\n## Subagentes y cuándo llamarlos\n- **Disponibilidad/Precios**: cuando tengas estancia clara y fecha concreta o relativa. Devuelve jornadas disponibles y precios. Usa su JSON para mostrar opciones.\n- **Datos/Registro**: tras cada paso significativo (estancia, fecha, jornada, extras, datos personales, estados de contrato/pago) para revisar/crear/actualizar la fila de `Registros Naujaras` con `id_session`.\n- **Reserva**: solo tras contrato enviado/firmado y pago confirmado; crea evento en calendario con horario indicado.\n\n## Tools propias del orquestador\n- **Mensaje de espera (WhatsApp)**: solo si una acción tarda > ~45s (p.ej., consultas largas). Breve: “Un momento, reviso disponibilidad”.\n- **Call \"Contrato\"**: tras confirmar el resumen final. Mensaje previo: “Voy a generar el contrato…”. Tras enviarlo: “Contrato enviado, por favor revíselo y fírmelo”.\n- **Pago reserva (Stripe link)**: tras recibir “Contrato firmado” o confirmar que está firmado. Usa precio (euros) y estancia para crear producto. Envía el link: `Para completar la reserva, realice el pago aquí:\\n*[URL]*`.\n\n## Llamadas a tools/subagentes (resumen)\n- Puedes encadenar varias llamadas en la misma acción interna (p.ej., Disponibilidad/Precios y luego Datos/Registro para guardar). Al cliente envía un único mensaje con el resultado.\n- Siempre que obtengas o cambies datos (estancia, fecha, jornada, extras, precio, estados contrato/pago, evento), sincroniza en ese mismo turno con Datos/Registro para idempotencia.\n- Disponibilidad/Precios → entrada: estancia, fecha (resolver “mañana”, “este sábado” usando Date & Time del subagente), opcional jornada. Muestra al cliente solo jornadas `disponible:true` con horario y precio.\n- Datos/Registro → entrada mínima: `id_session` + nuevos campos; idempotente. No borres campos no enviados.\n- Reserva → entrada: estancia, fecha, jornada, horario exacto (start/end) y `id_session`. Solo tras pago ok.\n\n## Jornada y horarios (para mostrar al cliente)\n- Ático: Día 13:00–20:00; Noche 22:00–11:00; Entero mañana 13:00–11:00; Entero noche 22:00–20:00.\n- Estudio: Día 11:30–18:30; Noche 20:00–10:00; Entero mañana 11:30–10:00; Entero noche 20:00–18:30.\n- Habitación: Día 13:30–19:30; Noche 21:00–12:00; Entero mañana 13:30–12:00; Entero noche 21:00–19:30.\n\n## Extras (preguntar uno a uno)\n1) Decoración especial: romántica / cumpleaños / aniversario (9€)\n2) Pack romántico (cava lambrusco + bombones) (9€)\n3) Personas extra: solo ático en jornada de día, máx. 4 en total.\n\n## Datos de registro (preguntar uno a uno)\n- Nombre arrendador; DNI arrendador; Nombre acompañante; DNI acompañante; n_personas.\nSincroniza en tabla vía subagente Datos/Registro tras cada dato.\n\n## Resumen final (antes de contrato)\nIncluye estancia, fecha, jornada + horario, extras, personas, precio estimado. Pide confirmación clara.\n\n## Contrato y pago\n- Tras resumen confirmado → Call \"Contrato\".\n- Si usuario envía “Contrato firmado”: responde breve agradeciendo y lanza **Pago reserva**. Explica que enviarás el enlace de pago.\n- Pago correcto (avisado por webhook o confirmación): crea evento con subagente Reserva; mensaje final de confirmación.\n- Pago fallido: informa que el pago no se completó y ofrece reintento; no crees evento.\n\n## Calendario (reserva final)\n- Usa subagente Reserva con estancia, fecha, jornada y horario. Solo tras pago correcto.\n\n## Reglas de consistencia\n- Usa `\\n` para formato de WhatsApp en una sola línea; no rompas JSON.\n- No menciones tools ni subagentes al cliente.\n- Si falta información clave (p.ej., fecha o estancia), pide solo ese dato.\n- Usa **Mensaje de espera** solo cuando algo tarde, y luego responde normal.\n- Mantén estado por sesión e idempotencia: reintentos de webhook no deben duplicar acciones (delegado en subagente Datos/Registro/Reserva).\n\n## Salidas esperadas de subagentes (para uso interno)\n- Disponibilidad/Precios: JSON con `fecha_iso`, `estancia`, lista de `jornadas` con `disponible`, `precio_eur`, `motivo`.\n- Datos/Registro: JSON `{\"id_session\":\"...\",\"row\":{...}}` con fila final.\n- Reserva: JSON `{\"id_session\":\"...\",\"evento\":{...}}` con start/end e id del evento.\n\n## Mensajes base\n- Primer contacto (solo estancia):\n`Hola, soy el asistente virtual para información y reservas de *Naujaras Sevilla* 🧡\\n\\nTe ayudo a encontrar la estancia perfecta para tu escapada de pareja en Sevilla.\\n\\nPara empezar, dime por favor qué estancia te interesa:\\n\\n- *Ático con piscina de agua caliente y jacuzzi XXL* — https://naujaras.com/#fotosyvideosatico\\n- *Estudio con jacuzzi XXL* — https://naujaras.com/#fotosyvideosestudio\\n- *Habitación con jacuzzi XXL* — https://naujaras.com/#habitacion`\n- Solicitar fecha tras estancia: `Genial, has elegido el *[estancia]* 🙂\\n¿Qué *día* te gustaría venir?`\n- Oferta de jornadas (usa datos del subagente): `Para el *[estancia]* el día *[fecha]* tengo disponibles:\\n\\n- *[jornada]* — [horario] — *[precio] €*`\n- Solicitar extras y datos: una pregunta por mensaje.\n- Mensaje de contrato: `Voy a generar el contrato con todos los datos de la reserva y te lo envío ahora para que lo revises y lo firmes.`\n- Tras enviar contrato: `El contrato ya está preparado y enviado.\\nPor favor, revísalo y fírmalo para continuar.`\n- Enlace de pago: `Para completar la reserva, por favor realiza el pago aquí:\\n*[URL]*`\n- Pago correcto: `Hemos recibido correctamente el pago 🎉\\ntu reserva ha quedado *confirmada y registrada en nuestra agenda*.\\n¡Muchas gracias!`\n- Pago fallido: `Nos llega un aviso de que el pago *no se ha completado correctamente*.\\nPor favor, inténtalo de nuevo o coméntame si necesitas ayuda.`"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        384,
+        -192
+      ],
+      "id": "8ce6d85f-1f90-48e1-b73e-ddbc49158578",
+      "name": "AI Agent1",
+      "retryOnFail": false,
+      "onError": "continueErrorOutput"
+    }
+  ],
+  "pinData": {
+    "Webhook2": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n-n8n.1owldl.easypanel.host",
+            "user-agent": "rest-client/2.1.0 (linux-musl x86_64) ruby/3.4.4p34",
+            "content-length": "5207",
+            "accept": "application/json",
+            "accept-encoding": "gzip;q=1.0,deflate;q=0.6,identity;q=0.3",
+            "content-type": "application/json",
+            "x-forwarded-for": "217.77.6.5",
+            "x-forwarded-host": "n8n-n8n.1owldl.easypanel.host",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "02df221ced09",
+            "x-real-ip": "217.77.6.5"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "account": {
+              "id": 44,
+              "name": "Jose Luis"
+            },
+            "additional_attributes": {},
+            "status": "sent",
+            "content_attributes": {},
+            "content_type": "text",
+            "content": "Quiero ir el 1 de enero de 2026",
+            "conversation": {
+              "additional_attributes": {},
+              "can_reply": true,
+              "channel": "Channel::Whatsapp",
+              "contact_inbox": {
+                "id": 148685,
+                "contact_id": 162223,
+                "inbox_id": 151,
+                "source_id": "34655312243",
+                "created_at": "2025-11-19T17:02:51.045Z",
+                "updated_at": "2025-11-19T17:02:51.045Z",
+                "hmac_verified": false,
+                "pubsub_token": "asEZB21uiJqzRiSA1Kh9XUaS"
+              },
+              "id": 2,
+              "inbox_id": 151,
+              "messages": [
+                {
+                  "id": 1127860,
+                  "content": "Quiero ir el 1 de enero de 2026",
+                  "account_id": 44,
+                  "inbox_id": 151,
+                  "conversation_id": 2,
+                  "message_type": 0,
+                  "created_at": 1764425377,
+                  "updated_at": "2025-11-29T14:09:37.248Z",
+                  "private": false,
+                  "status": "sent",
+                  "source_id": "wamid.HBgLMzQ2NTUzMTIyNDMVAgASGBQzQjgyQzI4MDJFRDkxMkJFRERGNwA=",
+                  "content_type": "text",
+                  "content_attributes": {},
+                  "sender_type": "Contact",
+                  "sender_id": 162223,
+                  "external_source_ids": {},
+                  "additional_attributes": {},
+                  "processed_message_content": "Quiero ir el 1 de enero de 2026",
+                  "sentiment": {},
+                  "conversation": {
+                    "assignee_id": 106,
+                    "unread_count": 5,
+                    "last_activity_at": 1764425377,
+                    "contact_inbox": {
+                      "source_id": "34655312243"
+                    }
+                  },
+                  "sender": {
+                    "additional_attributes": {
+                      "avatar_url_hash": "ccfc72b36cf9362e2d8e14ea39e3b2ea5925abc90c75feb0c81a2aba912e1c6f",
+                      "last_avatar_sync_at": "2025-11-19T17:07:12Z"
+                    },
+                    "custom_attributes": {
+                      "waha_whatsapp_jid": "34655312243@c.us",
+                      "waha_whatsapp_lid": "171584044146739@lid",
+                      "waha_whatsapp_chat_id": "34655312243@c.us"
+                    },
+                    "email": null,
+                    "id": 162223,
+                    "identifier": null,
+                    "name": "José Luis Manzanares",
+                    "phone_number": "+34655312243",
+                    "thumbnail": "https://web.wazend.net/rails/active_storage/representations/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBODhMQkE9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--d4cc6f216f81edf8788e1d11f27c6dbae8a4ee57/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaDdCem9MWm05eWJXRjBTU0lJYW5CbkJqb0dSVlE2RTNKbGMybDZaVjkwYjE5bWFXeHNXd2RwQWZvdyIsImV4cCI6bnVsbCwicHVyIjoidmFyaWF0aW9uIn19--26d9802f58947d2c36d70ce25de89cecc5b330f4/491833525_1057641966414560_246049069636626289_n.jpg",
+                    "blocked": false,
+                    "type": "contact"
+                  }
+                }
+              ],
+              "labels": [],
+              "meta": {
+                "sender": {
+                  "additional_attributes": {
+                    "avatar_url_hash": "ccfc72b36cf9362e2d8e14ea39e3b2ea5925abc90c75feb0c81a2aba912e1c6f",
+                    "last_avatar_sync_at": "2025-11-19T17:07:12Z"
+                  },
+                  "custom_attributes": {
+                    "waha_whatsapp_jid": "34655312243@c.us",
+                    "waha_whatsapp_lid": "171584044146739@lid",
+                    "waha_whatsapp_chat_id": "34655312243@c.us"
+                  },
+                  "email": null,
+                  "id": 162223,
+                  "identifier": null,
+                  "name": "José Luis Manzanares",
+                  "phone_number": "+34655312243",
+                  "thumbnail": "https://web.wazend.net/rails/active_storage/representations/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBODhMQkE9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--d4cc6f216f81edf8788e1d11f27c6dbae8a4ee57/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaDdCem9MWm05eWJXRjBTU0lJYW5CbkJqb0dSVlE2RTNKbGMybDZaVjkwYjE5bWFXeHNXd2RwQWZvdyIsImV4cCI6bnVsbCwicHVyIjoidmFyaWF0aW9uIn19--26d9802f58947d2c36d70ce25de89cecc5b330f4/491833525_1057641966414560_246049069636626289_n.jpg",
+                  "blocked": false,
+                  "type": "contact"
+                },
+                "assignee": {
+                  "id": 106,
+                  "name": "Jose Luis",
+                  "available_name": "Jose Luis",
+                  "avatar_url": "",
+                  "type": "user",
+                  "availability_status": null,
+                  "thumbnail": ""
+                },
+                "assignee_type": "User",
+                "team": null,
+                "hmac_verified": false
+              },
+              "status": "open",
+              "custom_attributes": {},
+              "snoozed_until": null,
+              "unread_count": 5,
+              "first_reply_created_at": "2025-11-19T17:03:09.555Z",
+              "priority": null,
+              "waiting_since": 1764257627,
+              "agent_last_seen_at": 1764423607,
+              "contact_last_seen_at": 0,
+              "last_activity_at": 1764425377,
+              "timestamp": 1764425377,
+              "created_at": 1763571771,
+              "updated_at": 1764425377.253015
+            },
+            "created_at": "2025-11-29T14:09:37.248Z",
+            "id": 1127860,
+            "inbox": {
+              "id": 151,
+              "name": "Jose Luis Manzanares IA WhatsApp"
+            },
+            "message_type": "incoming",
+            "private": false,
+            "sender": {
+              "account": {
+                "id": 44,
+                "name": "Jose Luis"
+              },
+              "additional_attributes": {
+                "avatar_url_hash": "ccfc72b36cf9362e2d8e14ea39e3b2ea5925abc90c75feb0c81a2aba912e1c6f",
+                "last_avatar_sync_at": "2025-11-19T17:07:12Z"
+              },
+              "avatar": "https://web.wazend.net/rails/active_storage/representations/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBODhMQkE9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--d4cc6f216f81edf8788e1d11f27c6dbae8a4ee57/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaDdCem9MWm05eWJXRjBTU0lJYW5CbkJqb0dSVlE2RTNKbGMybDZaVjkwYjE5bWFXeHNXd2RwQWZvdyIsImV4cCI6bnVsbCwicHVyIjoidmFyaWF0aW9uIn19--26d9802f58947d2c36d70ce25de89cecc5b330f4/491833525_1057641966414560_246049069636626289_n.jpg",
+              "custom_attributes": {
+                "waha_whatsapp_jid": "34655312243@c.us",
+                "waha_whatsapp_lid": "171584044146739@lid",
+                "waha_whatsapp_chat_id": "34655312243@c.us"
+              },
+              "email": null,
+              "id": 162223,
+              "identifier": null,
+              "name": "José Luis Manzanares",
+              "phone_number": "+34655312243",
+              "thumbnail": "https://web.wazend.net/rails/active_storage/representations/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBODhMQkE9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--d4cc6f216f81edf8788e1d11f27c6dbae8a4ee57/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaDdCem9MWm05eWJXRjBTU0lJYW5CbkJqb0dSVlE2RTNKbGMybDZaVjkwYjE5bWFXeHNXd2RwQWZvdyIsImV4cCI6bnVsbCwicHVyIjoidmFyaWF0aW9uIn19--26d9802f58947d2c36d70ce25de89cecc5b330f4/491833525_1057641966414560_246049069636626289_n.jpg",
+              "blocked": false
+            },
+            "source_id": "wamid.HBgLMzQ2NTUzMTIyNDMVAgASGBQzQjgyQzI4MDJFRDkxMkJFRERGNwA=",
+            "event": "message_created"
+          },
+          "webhookUrl": "https://n8n-n8n.1owldl.easypanel.host/webhook/965875a5-5a05-4097-9a1e-ac5d90c9c05a",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Insert row": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Get row(s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s)": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert row1": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "Insert row1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row(s)": {
+      "main": [
+        []
+      ]
+    },
+    "Date & Time": {
+      "ai_tool": [
+        [
+          {
+            "node": "Disponibilidad/Precios",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserva atico": {
+      "ai_tool": [
+        [
+          {
+            "node": "Reserva",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserva estudio": {
+      "ai_tool": [
+        [
+          {
+            "node": "Reserva",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserva habitacion": {
+      "ai_tool": [
+        [
+          {
+            "node": "Reserva",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disponibilidad ATICO": {
+      "ai_tool": [
+        [
+          {
+            "node": "Disponibilidad/Precios",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disponibilidad ESTUDIO": {
+      "ai_tool": [
+        [
+          {
+            "node": "Disponibilidad/Precios",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disponibilidad HABITACION": {
+      "ai_tool": [
+        [
+          {
+            "node": "Disponibilidad/Precios",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear fila": {
+      "ai_tool": [
+        [
+          {
+            "node": "Datos/Registro",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar fila": {
+      "ai_tool": [
+        [
+          {
+            "node": "Datos/Registro",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Revisar fila": {
+      "ai_tool": [
+        [
+          {
+            "node": "Datos/Registro",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Contrato'": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file1": {
+      "main": [
+        [
+          {
+            "node": "Share file1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Share file1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "PDFco Api",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDFco Api": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Analyze image1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze image1": {
+      "main": [
+        [
+          {
+            "node": "Insert row2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert row2": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Precios atico": {
+      "ai_tool": [
+        [
+          {
+            "node": "Disponibilidad/Precios",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Precios estudio": {
+      "ai_tool": [
+        [
+          {
+            "node": "Disponibilidad/Precios",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Precios habitacion": {
+      "ai_tool": [
+        [
+          {
+            "node": "Disponibilidad/Precios",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pago reserva": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Get row(s)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s)1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook2": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensaje de espera": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Insert row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Upload file1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Respuesta1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disponibilidad/Precios": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Datos/Registro": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserva": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Disponibilidad/Precios",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Datos/Registro",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Reserva",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Respuesta2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update row(s)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Madrid",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "25078758-ab42-419d-b36d-ed27cd293adb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "40ed9fce6f8d2943cc07e6d147d57819726120a77aad7ebca8fc7ffcba60df04"
+  },
+  "id": "mibYxCmghwvR5J0d",
+  "tags": []
+}

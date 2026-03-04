@@ -1,0 +1,44 @@
+Esquema visual: Orquestador + subagentes + tools
+-----------------------------------------------
+
+[Punto inicial: Subagentes y tools]
+  - Orquestador: controla FSM conversacional y formato final; tools de post-proceso (Update row(s), Message a model, Respuesta), Mensaje de espera
+  - Subagente Disponibilidad/Precios: Date & Time; Disponibilidad {atico, estudio, habitacion} (Google Calendar); Precios {atico, estudio, habitacion} (Google Sheets)
+  - Subagente Datos/Registro: Revisar fila / Crear fila / Actualizar fila (Registros Naujaras)
+  - Subagente Contrato: Call 'Contrato' (workflow externo); PDF -> imagen -> vision (Analyze image) para validar firma
+  - Subagente Pago/Stripe: Pago reserva (Stripe link); Webhook Stripe + Code JS (mapear estados); Mensaje de espera (HTTP request Wazend)
+  - Subagente Calendario: Reserva {atico, estudio, habitacion} (creacion evento)
+
+[Entradas Webhook]
+  - Webhook WhatsApp / Stripe -> Normalizador (texto/audio/adjunto)
+  - Normalizador escribe en Mensajes DB (dedupe + errors), rellena campos previos
+
+[Orquestador de conversacion]
+  Estado: estancia -> fechas -> disponibilidad -> jornadas -> extras -> datos -> resumen -> contrato -> pago -> calendario
+  Responsabilidad: mantener contexto por sesion, decidir que subagente invocar, formatear respuesta final
+
+[Interacciones]
+  Orq -> Subagente Disponibilidad/Precios (calcular slots y precio)
+    Tools: Date & Time; Disponibilidad {atico, estudio, habitacion} (Google Calendar); Precios {atico, estudio, habitacion} (Google Sheets)
+    Retorno: jornadas disponibles + importe por opcion
+  Orq -> Subagente Datos/Registro (captura y sync de datos)
+    Tools: Revisar fila / Crear fila / Actualizar fila (Registros Naujaras)
+    Retorno: ficha persona/reserva, idempotente
+  Orq -> Subagente Contrato (generar y validar firma)
+    Tools: Call 'Contrato' (workflow externo); PDF -> imagen -> vision para firma (Analyze image)
+    Retorno: link contrato, estado firma, evidencia
+  Orq -> Subagente Pago/Stripe (link y estados)
+    Tools: Pago reserva (Stripe link); Mensaje de espera (HTTP request Wazend); Webhook Stripe + Code JS para mapear estado
+    Retorno: link de pago, estado (success/failed/timeout), mensaje final
+  Orq -> Calendario (creacion de evento tras pago ok)
+    Tools: Reserva {atico, estudio, habitacion} (creacion evento)
+    Retorno: evento creado + confirmacion fechas
+  Orq -> Post-proceso respuesta
+    Tools: Update row(s) (marca processed en Mensajes DB); Message a model (sanitiza JSON one-liner); Respuesta (fallback)
+    Retorno: mensaje final a Wazend + marca processed
+
+[Notas]
+  - Orquestador decide reintentos y maneja idempotencia en webhooks
+  - Subagente Disponibilidad/Precios usa caches cortas y fuentes autoritativas (calendario + sheets)
+  - Subagente Datos/Registro usa clave natural para upsert
+  - Pago y Contrato referencian la misma fila de reserva para trazabilidad
