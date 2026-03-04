@@ -516,9 +516,9 @@ export async function fetchJornadaPrices(date: Date, roomId: RoomId): Promise<Jo
   try {
     const room = getRoomById(roomId);
 
-    // Formatear fecha como dd/mm/yyyy
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
+    // Formatear fecha como d/m/yyyy (para que coincida con el Excel sin ceros a la izquierda)
+    const day = String(date.getDate());
+    const month = String(date.getMonth() + 1);
     const year = date.getFullYear();
     const dateFormatted = `${day}/${month}/${year}`;
 
