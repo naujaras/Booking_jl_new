@@ -474,8 +474,8 @@ export async function checkAvailability(date: Date, roomId: RoomId): Promise<Ava
     });
 
     if (!response.ok) {
-      console.error('Error en respuesta del webhook de disponibilidad:', response.status);
-      return { events: [], availableJornadas: [] };
+      console.error('⚠️ Error en respuesta del webhook de disponibilidad, asumiendo todo disponible como salvavidas:', response.status);
+      return { events: [], availableJornadas: room?.jornadas.map(j => j.id) || [] };
     }
     const text = await response.text();
     let data;
