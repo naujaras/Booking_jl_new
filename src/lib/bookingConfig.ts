@@ -682,10 +682,42 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
     const data = await response.json();
 
     // Extraer URL del contrato de la respuesta del webhook
-    // La respuesta viene como array: [{ submitters: [{ embed_src: "..." }] }]
     let contractUrl: string | undefined;
+
+    // 1. Formato antiguo que devolvía la API directo
     if (Array.isArray(data) && data[0]?.submitters?.[0]?.embed_src) {
       contractUrl = data[0].submitters[0].embed_src;
+    }
+    // 2. Nuevo formato JSON que sale de n8n { contractUrl: "..." }
+    else if (data && data.contractUrl) {
+      contractUrl = data.contractUrl;
+    }
+    // 3. SALVAVIDAS FINAL: Si n8n responde inmediatamente en segundo plano {"message": "Workflow was started"}, 
+    // nosotros mismos fabricamos el enlace de DocuSeal aquí para no bloquear la pantalla 5 (Contrato).
+    else {
+      console.warn("Respuesta asíncrona de n8n. Generando enlace DocuSeal localmente como salvavidas.");
+
+      const emailEncoded = encodeURIComponent(email);
+      const nombre = encodeURIComponent(booking.clientData.arrendadorNombre);
+      const dni = encodeURIComponent(booking.clientData.arrendadorDni);
+      const nombreAcomp = encodeURIComponent(booking.clientData.acompananteNombre || '');
+      const dniAcomp = encodeURIComponent(booking.clientData.acompananteDni || '');
+      const servicios = encodeURIComponent(`${room?.name} (${jornada?.name})`);
+      const numPersonas = (booking.clientData.acompananteNombre ? 2 : 1) + booking.extras.personasExtra;
+
+      const fechaEntradaLimpia = fechaEntrada ? fechaEntrada.split(" ")[0] : "";
+      const horaEntrada = fechaEntrada ? fechaEntrada.split(" ")[1] : "";
+      const fechaSalidaLimpia = fechaSalida ? fechaSalida.split(" ")[0] : "";
+      const horaSalida = fechaSalida ? fechaSalida.split(" ")[1] : "";
+
+      let dia = "", mes = "", anio = "";
+      if (booking.date) {
+        dia = String(booking.date.getDate()).padStart(2, "0");
+        mes = String(booking.date.getMonth() + 1).padStart(2, "0");
+        anio = String(booking.date.getFullYear());
+      }
+
+      contractUrl = `https://docuseal.com/d/wmTU9BzDWXetEa?email=${emailEncoded}&Nombre=${nombre}&dni=${dni}&Nombre%20acompa%C3%B1ante=${nombreAcomp}&dni%20acompa%C3%B1ante=${dniAcomp}&servicios_contratados=${servicios}&numero_personas=${numPersonas}&fecha_entrada=${encodeURIComponent(fechaEntradaLimpia)}&hora_entrada=${encodeURIComponent(horaEntrada)}&fecha_salida=${encodeURIComponent(fechaSalidaLimpia)}&hora_salida=${encodeURIComponent(horaSalida)}&dia=${dia}&mes=${mes}&a%C3%B1o=${anio}`;
     }
 
     return {
