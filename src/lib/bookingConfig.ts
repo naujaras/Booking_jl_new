@@ -717,7 +717,8 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
         anio = String(booking.date.getFullYear());
       }
 
-      contractUrl = `https://docuseal.com/d/wmTU9BzDWXetEa?email=${emailEncoded}&Nombre=${nombre}&dni=${dni}&Nombre%20acompa%C3%B1ante=${nombreAcomp}&dni%20acompa%C3%B1ante=${dniAcomp}&servicios_contratados=${servicios}&numero_personas=${numPersonas}&fecha_entrada=${encodeURIComponent(fechaEntradaLimpia)}&hora_entrada=${encodeURIComponent(horaEntrada)}&fecha_salida=${encodeURIComponent(fechaSalidaLimpia)}&hora_salida=${encodeURIComponent(horaSalida)}&dia=${dia}&mes=${mes}&a%C3%B1o=${anio}`;
+      // Mapeo exacto a las variables de DocuSeal (Nombre_arrendador, Número_de_personas_incluidas_en_la_reserva, etc.)
+      contractUrl = `https://docuseal.com/d/wmTU9BzDWXetEa?email=${emailEncoded}&Nombre_arrendador=${nombre}&DNI=${dni}&Acompa%C3%B1ante=${nombreAcomp}&DNI_acompa%C3%B1ante=${dniAcomp}&Servicios_contratados=${servicios}&N%C3%BAmero_de_personas_incluidas_en_la_reserva=${numPersonas}&fecha_entrada=${encodeURIComponent(fechaEntradaLimpia)}&hora_entrada=${encodeURIComponent(horaEntrada)}&fecha_salida=${encodeURIComponent(fechaSalidaLimpia)}&hora_salida=${encodeURIComponent(horaSalida)}&dia=${dia}&mes=${mes}&a%C3%B1o=${anio}`;
     }
 
     return {

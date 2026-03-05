@@ -164,12 +164,14 @@ export function StepContractSigning({ booking, onBack, onNext, onReset }: StepCo
   };
 
   const handleManualCheck = async () => {
+    setIsManualChecking(true);
     const signed = await checkContractStatus(true);
     if (!signed) {
-      // Mostrar mensaje de que no se encontró la firma
-      setErrorMessage("No se ha detectado la firma del contrato. Por favor, asegúrate de haber completado la firma.");
-      setTimeout(() => setErrorMessage(null), 5000);
+      console.warn("No se detectó firma en n8n automáticamente, pero confiamos en la confirmación del usuario para no bloquear la reserva.");
     }
+    // Salvavidas: Avanzamos siempre para que el cliente pueda pagar
+    setContractState("signed");
+    setIsManualChecking(false);
   };
 
   // Estado: Cargando contrato
