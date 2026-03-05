@@ -165,13 +165,12 @@ export function StepContractSigning({ booking, onBack, onNext, onReset }: StepCo
 
   const handleManualCheck = async () => {
     setIsManualChecking(true);
-    const signed = await checkContractStatus(true);
-    if (!signed) {
-      console.warn("No se detectó firma en n8n automáticamente, pero confiamos en la confirmación del usuario para no bloquear la reserva.");
-    }
-    // Salvavidas: Avanzamos siempre para que el cliente pueda pagar
-    setContractState("signed");
-    setIsManualChecking(false);
+    // Ya no comprobamos en n8n si ha firmado cuando le da al botón porque docuseal le cambia el email al enviarlo 
+    // y falla la comprobación. Damos pase VIP y confiamos en el usuario.
+    setTimeout(() => {
+      setContractState("signed");
+      setIsManualChecking(false);
+    }, 1500); // Simulamos una pequeña carga
   };
 
   // Estado: Cargando contrato
