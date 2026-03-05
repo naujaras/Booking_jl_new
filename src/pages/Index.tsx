@@ -21,11 +21,13 @@ const Index = () => {
                 </p>
               </div>
             </div>
-            <a 
-              href="tel:+34600000000" 
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+            <a
+              href="https://wa.me/34677222166?text=Hola,%20tengo%20una%20duda%20sobre%20las%20reservas."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
             >
-              ¿Dudas? Llámanos
+              ¿Dudas? Escríbenos
             </a>
           </div>
         </div>
@@ -41,7 +43,7 @@ const Index = () => {
             Tu escapada romántica perfecta
           </h2>
           <p className="text-muted-foreground max-w-lg mx-auto">
-            Espacios íntimos y exclusivos diseñados para crear momentos inolvidables. 
+            Espacios íntimos y exclusivos diseñados para crear momentos inolvidables.
             Reserva tu experiencia en pocos pasos.
           </p>
         </div>
