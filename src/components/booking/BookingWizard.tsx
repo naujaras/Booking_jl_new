@@ -55,9 +55,53 @@ const initialBookingData: BookingData = {
   clientData: initialClientData
 };
 
+const getInitialBookingData = (): BookingData => {
+  const params = new URLSearchParams(window.location.search);
+  const roomParam = params.get("room") as RoomId | null;
+  const dateParam = params.get("date");
+  const slotParam = params.get("slot");
+
+  let parsedDate: Date | null = null;
+  if (dateParam) {
+    const [y, m, d] = dateParam.split("-").map(Number);
+    if (y && m && d) {
+      parsedDate = new Date(y, m - 1, d);
+    }
+  }
+
+  let parsedJornada: JornadaType | null = null;
+  if (slotParam) {
+    const s = slotParam.toLowerCase();
+    if (s.includes("mañana") || s.includes("manana")) {
+      parsedJornada = "dia_entero_manana";
+    } else if (s.includes("entero") && s.includes("noche")) {
+      parsedJornada = "dia_entero_noche";
+    } else if (s.includes("entero")) {
+      parsedJornada = "dia_entero_manana";
+    } else if (s.includes("noche")) {
+      parsedJornada = "noche";
+    } else if (s.includes("día") || s.includes("dia")) {
+      parsedJornada = "dia";
+    }
+  }
+
+  return {
+    ...initialBookingData,
+    room: roomParam,
+    date: parsedDate,
+    jornada: parsedJornada
+  };
+};
+
 export function BookingWizard() {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [booking, setBooking] = useState<BookingData>(initialBookingData);
+  const [booking, setBooking] = useState<BookingData>(getInitialBookingData);
+  const [currentStep, setCurrentStep] = useState(() => {
+    const data = getInitialBookingData();
+    if (data.room && data.date && data.jornada) {
+      return 2;
+    }
+    return 1;
+  });
   const [paymentPendingVerification, setPaymentPendingVerification] = useState(false);
 
   const handleRoomChange = (room: RoomId) => {
