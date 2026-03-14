@@ -3,9 +3,9 @@
 // ============================================
 
 // URLs de Webhooks de n8n (producción)
-export const N8N_WEBHOOK_URL = "https://n8n-n8n.npfusf.easypanel.host/webhook/disponibilidad";
-export const N8N_PRICES_WEBHOOK_URL = "https://n8n-n8n.npfusf.easypanel.host/webhook/precios-excel";
-export const N8N_BOOKING_WEBHOOK_URL = "https://n8n-n8n.npfusf.easypanel.host/webhook/reservar";
+export const N8N_WEBHOOK_URL = "https://n8n-n8n.1owldl.easypanel.host/webhook/b4920b99-1724-4169-8630-50b4b795911d";
+export const N8N_PRICES_WEBHOOK_URL = "https://n8n-n8n.1owldl.easypanel.host/webhook/854bd8ed-d900-4b55-a210-a08dac674651";
+export const N8N_BOOKING_WEBHOOK_URL = "https://n8n-n8n.1owldl.easypanel.host/webhook/a34d16d0-2cac-4847-845c-9b0a89f81f0c";
 
 // Tipos de datos
 export type RoomId = "atico" | "estudio" | "habitacion";
@@ -66,6 +66,11 @@ export interface BookingData {
   jornada: JornadaType | null;
   jornadaPrice: number | null; // Precio dinámico de la jornada
   comments?: string;
+  commentFields?: {
+    generales: string;
+    horaLlegada: string;
+    pagoManual: string;
+  };
   extras: {
     decoracion: DecorationType | null;
     decoracionDetails: DecorationDetails;
@@ -73,6 +78,42 @@ export interface BookingData {
     personasExtra: number;
   };
   clientData: ClientData;
+}
+
+// Initial client data for forms
+export const initialClientData: ClientData = {
+  arrendadorNombre: "",
+  arrendadorDni: "",
+  acompananteNombre: "",
+  acompananteDni: "",
+  email: "",
+  telefono: "",
+};
+
+// Initial booking data for forms
+export function initialBookingData(): BookingData {
+  return {
+    room: null,
+    date: null,
+    jornada: null,
+    jornadaPrice: null,
+    comments: "",
+    extras: {
+      decoracion: null,
+      decoracionDetails: {
+        iniciales: "",
+        numero: ""
+      },
+      pack: null,
+      personasExtra: 0,
+    },
+    clientData: initialClientData,
+    commentFields: {
+      generales: "",
+      horaLlegada: "",
+      pagoManual: ""
+    }
+  };
 }
 
 // Configuración de habitaciones con horarios
@@ -255,7 +296,7 @@ export function calculateTotalPrice(booking: BookingData): number {
       }
     }
   }
-
+  
   // Decoración
   if (booking.extras.decoracion) {
     const decoration = DECORATIONS.find(d => d.id === booking.extras.decoracion);
@@ -263,7 +304,7 @@ export function calculateTotalPrice(booking: BookingData): number {
       total += decoration.price;
     }
   }
-
+  
   // Pack
   if (booking.extras.pack) {
     const pack = PACKS.find(p => p.id === booking.extras.pack);
@@ -271,12 +312,12 @@ export function calculateTotalPrice(booking: BookingData): number {
       total += pack.price;
     }
   }
-
+  
   // Personas extra
   if (canAddPersonasExtra(booking.room, booking.jornada)) {
     total += booking.extras.personasExtra * PERSONA_EXTRA_PRICE;
   }
-
+  
   return total;
 }
 
@@ -456,55 +497,44 @@ export async function checkAvailability(date: Date, roomId: RoomId): Promise<Ava
   try {
     const room = getRoomById(roomId);
 
-    // Crear rango de fechas: mes completo para cachear si se quiere, o día actual
-    const startDateTime = formatDateLocal(date); // YYYY-MM-DD
+    // Crear rango de fechas: día seleccionado 00:00 hasta día siguiente 23:59
+    const startDateTime = formatDateTimeLocal(date, '00:00');
     const nextDay = new Date(date);
     nextDay.setDate(nextDay.getDate() + 1);
-    const endDateTime = formatDateLocal(nextDay); // YYYY-MM-DD
+    const endDateTime = formatDateTimeLocal(nextDay, '23:59');
 
-    // Petición GET al nuevo webhook
-    const url = new URL(N8N_WEBHOOK_URL);
-    url.searchParams.append('room', roomId);
-    url.searchParams.append('dateFrom', startDateTime);
-    url.searchParams.append('dateTo', endDateTime);
-
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' },
+    const response = await fetch(N8N_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'check_availability',
+        room_id: roomId,
+        room_name: room?.name || roomId,
+        date_start: startDateTime,
+        date_end: endDateTime,
+        date_formatted: date.toLocaleDateString('es-ES', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })
+      })
     });
 
     if (!response.ok) {
-      console.error(' ⚠️ Error en respuesta del webhook de disponibilidad, asumiendo todo disponible como salvavidas:', response.status);
-      return { events: [], availableJornadas: room?.jornadas.map(j => j.id) || [] };
-    }
-    const text = await response.text();
-    let data;
-    try {
-      data = text ? JSON.parse(text) : { busy: [] }; // Si está vacío (no hay eventos), simular arreglo vacío
-    } catch (e) {
-      console.warn("Respuesta no es JSON válido, asumiendo vacío:", text);
-      data = { busy: [] };
+      console.error('Error en respuesta del webhook:', response.status);
+      return { events: [], availableJornadas: [] };
     }
 
-    // Parsear eventos del nuevo formato: { "room":"x", "busy": [{start:"...", end:"..."}] }
+    const data = await response.json();
+
+    // Parsear eventos
     let events: CalendarEvent[] = [];
 
-    if (data && data.busy && Array.isArray(data.busy)) {
-      events = data.busy.map((b: any, index: number) => ({
-        id: `busy-${index}`,
-        start: { dateTime: b.start },
-        end: { dateTime: b.end }
-      }));
-    } else if (Array.isArray(data)) {
-      // Fallback por si devuelve array directo
-      const busyArr = data[0]?.busy || data;
-      if (Array.isArray(busyArr)) {
-        events = busyArr.map((b: any, index: number) => ({
-          id: `busy-${index}`,
-          start: { dateTime: b.start || b.start?.dateTime },
-          end: { dateTime: b.end || b.end?.dateTime }
-        })).filter(e => e.start.dateTime && e.end.dateTime);
-      }
+    if (Array.isArray(data)) {
+      events = data.filter(e =>
+        e && typeof e === 'object' && Object.keys(e).length > 0 && e.start && e.end
+      );
     }
 
     // Calcular jornadas disponibles
@@ -512,48 +542,35 @@ export async function checkAvailability(date: Date, roomId: RoomId): Promise<Ava
 
     return { events, availableJornadas };
   } catch (error) {
-    console.error('Error verificando disponibilidad, asumiendo todo disponible como salvavidas:', error);
-    // SALVAVIDAS: Si el webhook de disponibilidad explota o el n8n se apaga, 
-    // en lugar de bloquear la web, dejamos todas las jornadas libres por defecto
-    // para que el cliente pueda seguir avanzando y al menos intentarlo.
-    const room = getRoomById(roomId);
-    return { events: [], availableJornadas: room.jornadas.map(j => j.id) };
+    console.error('Error verificando disponibilidad:', error);
+    return { events: [], availableJornadas: [] };
   }
 }
 
 // Función para obtener precios dinámicos desde n8n
 export async function fetchJornadaPrices(date: Date, roomId: RoomId): Promise<JornadaPrices | null> {
-  // PRECIOS SALVAVIDAS POR DEFECTO:
-  // Si n8n se ahoga, se devuelve esto en lugar de bloquear la web.
-  const DEFAULT_PRICES: Record<RoomId, JornadaPrices> = {
-    atico: { dia: 99, noche: 149, dia_entero_manana: 189, dia_entero_noche: 189 },
-    estudio: { dia: 39, noche: 65, dia_entero_manana: 89, dia_entero_noche: 89 },
-    habitacion: { dia: 39, noche: 65, dia_entero_manana: 89, dia_entero_noche: 89 }
-  };
-  const fallbackPrices = DEFAULT_PRICES[roomId];
-
   try {
     const room = getRoomById(roomId);
 
-    // Formatear fecha como d/m/yyyy (para que coincida con el Excel sin ceros a la izquierda)
-    const day = String(date.getDate());
-    const month = String(date.getMonth() + 1);
+    // Formatear fecha como dd/mm/yyyy
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
     const dateFormatted = `${day}/${month}/${year}`;
 
-    // Petición GET al webhook de precios
-    const url = new URL(N8N_PRICES_WEBHOOK_URL);
-    url.searchParams.append('room', roomId);
-    url.searchParams.append('date', dateFormatted);
-
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' },
+    const response = await fetch(N8N_PRICES_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        room_name: room?.name || roomId,
+        room_id: roomId,
+        date: dateFormatted
+      })
     });
 
     if (!response.ok) {
-      console.error('Error obteniendo precios, usando precios salvavidas:', response.status);
-      return fallbackPrices;
+      console.error('Error obteniendo precios:', response.status);
+      return null;
     }
 
     const data = await response.json();
@@ -563,34 +580,32 @@ export async function fetchJornadaPrices(date: Date, roomId: RoomId): Promise<Jo
 
     if (Array.isArray(data) && data.length > 0) {
       pricesResponse = data[0];
-    } else if (data && typeof data === 'object' && !data.message) { // Evitar el "No item to return"
+    } else if (data && typeof data === 'object') {
       pricesResponse = data;
     } else {
-      console.warn("Datos vacíos o error de n8n, usando precios salvavidas.");
-      return fallbackPrices;
+      return null;
     }
 
     // Validar que tenga los campos necesarios y normalizar nombres
     if (
-      pricesResponse.jornada_de_dia !== undefined &&
-      pricesResponse.jornada_de_noche !== undefined &&
-      pricesResponse.dia_entero_manana !== undefined &&
-      pricesResponse.dia_entero_noche !== undefined
+      typeof pricesResponse.jornada_de_dia === 'number' &&
+      typeof pricesResponse.jornada_de_noche === 'number' &&
+      typeof pricesResponse.dia_entero_manana === 'number' &&
+      typeof pricesResponse.dia_entero_noche === 'number'
     ) {
-      // Convertir a número por si vienen como texto desde Google Sheets ('150' -> 150)
+      // Mapear nombres del webhook a nombres internos
       return {
-        dia: Number(pricesResponse.jornada_de_dia) || fallbackPrices.dia,
-        noche: Number(pricesResponse.jornada_de_noche) || fallbackPrices.noche,
-        dia_entero_manana: Number(pricesResponse.dia_entero_manana) || fallbackPrices.dia_entero_manana,
-        dia_entero_noche: Number(pricesResponse.dia_entero_noche) || fallbackPrices.dia_entero_noche
+        dia: pricesResponse.jornada_de_dia,
+        noche: pricesResponse.jornada_de_noche,
+        dia_entero_manana: pricesResponse.dia_entero_manana,
+        dia_entero_noche: pricesResponse.dia_entero_noche
       };
     }
 
-    console.warn("Faltan campos de precio, usando precios salvavidas.");
-    return fallbackPrices;
+    return null;
   } catch (error) {
-    console.error('Error crítico obteniendo precios, activando salvavidas:', error);
-    return fallbackPrices; // ¡Nunca devolvemos null, siempre el salvavidas!
+    console.error('Error obteniendo precios:', error);
+    return null;
   }
 }
 
@@ -682,43 +697,10 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
     const data = await response.json();
 
     // Extraer URL del contrato de la respuesta del webhook
+    // La respuesta viene como array: [{ submitters: [{ embed_src: "..." }] }]
     let contractUrl: string | undefined;
-
-    // 1. Formato antiguo que devolvía la API directo
     if (Array.isArray(data) && data[0]?.submitters?.[0]?.embed_src) {
       contractUrl = data[0].submitters[0].embed_src;
-    }
-    // 2. Nuevo formato JSON que sale de n8n { contractUrl: "..." }
-    else if (data && data.contractUrl) {
-      contractUrl = data.contractUrl;
-    }
-    // 3. SALVAVIDAS FINAL: Si n8n responde inmediatamente en segundo plano {"message": "Workflow was started"}, 
-    // nosotros mismos fabricamos el enlace de DocuSeal aquí para no bloquear la pantalla 5 (Contrato).
-    else {
-      console.warn("Respuesta asíncrona de n8n. Generando enlace DocuSeal localmente como salvavidas.");
-
-      const emailEncoded = encodeURIComponent(email);
-      const nombre = encodeURIComponent(booking.clientData.arrendadorNombre);
-      const dni = encodeURIComponent(booking.clientData.arrendadorDni);
-      const nombreAcomp = encodeURIComponent(booking.clientData.acompananteNombre || '');
-      const dniAcomp = encodeURIComponent(booking.clientData.acompananteDni || '');
-      const servicios = encodeURIComponent(`${room?.name} (${jornada?.name})`);
-      const numPersonas = (booking.clientData.acompananteNombre ? 2 : 1) + booking.extras.personasExtra;
-
-      const fechaEntradaLimpia = fechaEntrada ? fechaEntrada.split(" ")[0] : "";
-      const horaEntrada = fechaEntrada ? fechaEntrada.split(" ")[1] : "";
-      const fechaSalidaLimpia = fechaSalida ? fechaSalida.split(" ")[0] : "";
-      const horaSalida = fechaSalida ? fechaSalida.split(" ")[1] : "";
-
-      let dia = "", mes = "", anio = "";
-      if (booking.date) {
-        dia = String(booking.date.getDate()).padStart(2, "0");
-        mes = String(booking.date.getMonth() + 1).padStart(2, "0");
-        anio = String(booking.date.getFullYear());
-      }
-
-      // Mapeo exacto a las variables de DocuSeal (Nombre_arrendador, Número_de_personas_incluidas_en_la_reserva, etc.)
-      contractUrl = `https://docuseal.com/d/wmTU9BzDWXetEa?email=${emailEncoded}&Nombre_arrendador=${nombre}&DNI=${dni}&Acompa%C3%B1ante=${nombreAcomp}&DNI_acompa%C3%B1ante=${dniAcomp}&Servicios_contratados=${servicios}&N%C3%BAmero_de_personas_incluidas_en_la_reserva=${numPersonas}&fecha_entrada=${encodeURIComponent(fechaEntradaLimpia)}&hora_entrada=${encodeURIComponent(horaEntrada)}&fecha_salida=${encodeURIComponent(fechaSalidaLimpia)}&hora_salida=${encodeURIComponent(horaSalida)}&dia=${dia}&mes=${mes}&a%C3%B1o=${anio}`;
     }
 
     return {
