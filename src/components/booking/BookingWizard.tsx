@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { StepSearch } from "./StepSearch";
 import { StepExtras } from "./StepExtras";
@@ -52,57 +53,60 @@ const initialBookingData: BookingData = {
     pack: null,
     personasExtra: 0
   },
-  clientData: initialClientData
-};
-
-const getInitialBookingData = (): BookingData => {
-  const params = new URLSearchParams(window.location.search);
-  const roomParam = params.get("room") as RoomId | null;
-  const dateParam = params.get("date");
-  const slotParam = params.get("slot");
-
-  let parsedDate: Date | null = null;
-  if (dateParam) {
-    const [y, m, d] = dateParam.split("-").map(Number);
-    if (y && m && d) {
-      parsedDate = new Date(y, m - 1, d);
-    }
+  clientData: initialClientData,
+  commentFields: {
+    generales: "",
+    horaLlegada: "",
+    pagoManual: ""
   }
-
-  let parsedJornada: JornadaType | null = null;
-  if (slotParam) {
-    const s = slotParam.toLowerCase();
-    if (s.includes("mañana") || s.includes("manana")) {
-      parsedJornada = "dia_entero_manana";
-    } else if (s.includes("entero") && s.includes("noche")) {
-      parsedJornada = "dia_entero_noche";
-    } else if (s.includes("entero")) {
-      parsedJornada = "dia_entero_manana";
-    } else if (s.includes("noche")) {
-      parsedJornada = "noche";
-    } else if (s.includes("día") || s.includes("dia")) {
-      parsedJornada = "dia";
-    }
-  }
-
-  return {
-    ...initialBookingData,
-    room: roomParam,
-    date: parsedDate,
-    jornada: parsedJornada
-  };
 };
 
 export function BookingWizard() {
-  const [booking, setBooking] = useState<BookingData>(getInitialBookingData);
-  const [currentStep, setCurrentStep] = useState(() => {
-    const data = getInitialBookingData();
-    if (data.room && data.date && data.jornada) {
-      return 2;
-    }
-    return 1;
-  });
+  const [searchParams] = useSearchParams();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [booking, setBooking] = useState<BookingData>(initialBookingData);
   const [paymentPendingVerification, setPaymentPendingVerification] = useState(false);
+
+  useEffect(() => {
+    const roomParam = searchParams.get("room") as RoomId | null;
+    const dateParam = searchParams.get("date");
+    const jornadaParam = searchParams.get("jornada") as JornadaType | null;
+    const slotParam = searchParams.get("slot");
+
+    if (roomParam || dateParam || jornadaParam || slotParam) {
+      const newBooking = { ...initialBookingData };
+
+      if (roomParam) newBooking.room = roomParam;
+      if (dateParam) {
+        const parsedDate = new Date(dateParam);
+        if (!isNaN(parsedDate.getTime())) {
+          newBooking.date = parsedDate;
+        }
+      }
+      
+      if (jornadaParam) {
+        newBooking.jornada = jornadaParam;
+      } else if (slotParam) {
+        // Map slot name from Hub to JornadaType
+        const slotMap: Record<string, JornadaType> = {
+          "Día": "dia",
+          "Noche": "noche",
+          "Día Entero (mañana)": "dia_entero_manana",
+          "Día Entero (noche)": "dia_entero_noche"
+        };
+        if (slotMap[slotParam]) {
+          newBooking.jornada = slotMap[slotParam];
+        }
+      }
+
+      setBooking(newBooking);
+      
+      // If we have room, date and jornada, skip to extras (step 2)
+      if (newBooking.room && newBooking.date && newBooking.jornada) {
+        setCurrentStep(2);
+      }
+    }
+  }, [searchParams]);
 
   const handleRoomChange = (room: RoomId) => {
     setBooking({ ...booking, room, jornada: null, extras: { ...booking.extras, personasExtra: 0 } });
@@ -158,6 +162,10 @@ export function BookingWizard() {
 
   const handleClientDataChange = (clientData: ClientData) => {
     setBooking({ ...booking, clientData });
+  };
+
+  const handleCommentFieldsChange = (fields: { generales: string; horaLlegada: string; pagoManual: string }) => {
+    setBooking({ ...booking, commentFields: fields });
   };
 
   const handleCommentsChange = (comments: string) => {
@@ -264,6 +272,7 @@ export function BookingWizard() {
               onBack={() => setCurrentStep(3)}
               onNext={() => setCurrentStep(5)}
               onCommentsChange={handleCommentsChange}
+              onCommentFieldsChange={handleCommentFieldsChange}
             />
           )}
 
