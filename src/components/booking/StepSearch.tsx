@@ -164,16 +164,6 @@ export function StepSearch({
                     </span>
                   ))}
                 </div>
-                <a
-                  href={room.photosLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  Ver fotos y vídeos
-                </a>
               </div>
             </div>
           ))}
