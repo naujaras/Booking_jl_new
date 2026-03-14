@@ -16,7 +16,7 @@ const N8N_STRIPE_WEBHOOK = "https://n8n-n8n.1owldl.easypanel.host/webhook/6712f3
 const N8N_PAYMENT_STATUS_WEBHOOK = "https://n8n-n8n.1owldl.easypanel.host/webhook/6218e434-d177-4bf9-8699-f03bddaa7983";
 const BIZUM_PHONE = "679 96 82 09";
 const WHATSAPP_PHONE = "34677222166";
-const IBAN = "ES00 0000 0000 0000 0000 0000"; // TODO: Reemplazar con IBAN real
+const IBAN = "ES00 0000 0000 0000 0000 0000"; // ← TODO: REEMPLAZAR CON TU IBAN REAL PARA TRANSFERENCIAS
 const POLLING_INTERVAL = 60000; // 1 minuto
 const MAX_ATTEMPTS = 10; // 10 intentos = 10 minutos
 
@@ -440,7 +440,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
             Pago con Bizum
           </h2>
           <p className="text-muted-foreground">
-            Entra en la aplicación de tu banco para realizar el pago por Bizum
+            Realiza el pago y envía el comprobante por WhatsApp
           </p>
         </div>
 
@@ -485,16 +485,26 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
 
         <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
           <p className="text-sm text-amber-700 dark:text-amber-300 text-center">
-            <strong>Importante:</strong> Su reserva quedará en estado de pre-reserva hasta que enviemos la confirmación manual.
+            <strong>⚠️ Atención:</strong> Tu reserva <strong>NO está confirmada</strong> hasta que Juan valide el pago manualmente. 
+            Es imprescindible enviar el comprobante por WhatsApp ahora mismo.
           </p>
         </div>
 
         <Button
-          onClick={onPendingVerification}
-          className="w-full h-14 text-lg font-medium bg-primary hover:bg-primary/90"
+          onClick={openWhatsApp}
+          className="w-full h-14 text-lg font-medium bg-green-600 hover:bg-green-700"
         >
-          <Check className="mr-2 h-5 w-5" />
-          Ya he realizado el pago
+          <Smartphone className="mr-2 h-5 w-5" />
+          Enviar comprobante por WhatsApp
+        </Button>
+
+        <Button
+          onClick={onPendingVerification}
+          variant="outline"
+          className="w-full h-12 border-primary text-primary hover:bg-primary/10"
+        >
+          <Check className="mr-2 h-4 w-4" />
+          Ya he enviado el comprobante por WhatsApp
         </Button>
 
         <Button
@@ -520,7 +530,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
             Transferencia Bancaria
           </h2>
           <p className="text-muted-foreground">
-            Entra en la aplicación de tu banco para realizar la transferencia
+            Realiza la transferencia y envía el comprobante por WhatsApp
           </p>
         </div>
 
@@ -565,16 +575,26 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
 
         <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
           <p className="text-sm text-amber-700 dark:text-amber-300 text-center">
-            <strong>Importante:</strong> Su reserva quedará en estado de pre-reserva hasta que enviemos la confirmación manual.
+            <strong>Importante:</strong> Envía el justificante de transferencia por WhatsApp
+            para confirmar tu reserva manualmente.
           </p>
         </div>
 
         <Button
-          onClick={onPendingVerification}
-          className="w-full h-14 text-lg font-medium bg-primary hover:bg-primary/90"
+          onClick={openWhatsApp}
+          className="w-full h-14 text-lg font-medium bg-green-600 hover:bg-green-700"
         >
-          <Check className="mr-2 h-5 w-5" />
-          Ya he realizado la transferencia
+          <Smartphone className="mr-2 h-5 w-5" />
+          Enviar comprobante por WhatsApp
+        </Button>
+
+        <Button
+          onClick={onPendingVerification}
+          variant="outline"
+          className="w-full h-12 border-primary text-primary hover:bg-primary/10"
+        >
+          <Check className="mr-2 h-4 w-4" />
+          Ya he enviado el comprobante por WhatsApp
         </Button>
 
         <Button
