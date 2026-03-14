@@ -703,6 +703,13 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
       contractUrl = data[0].submitters[0].embed_src;
     }
 
+    if (!contractUrl) {
+      return {
+        success: false,
+        message: 'El sistema no ha podido generar el enlace del contrato. Por favor, contacta con nosotros para completar la reserva manualmente.'
+      };
+    }
+
     return {
       success: true,
       message: 'El contrato ha sido generado. Firma el documento para continuar con el pago.',
