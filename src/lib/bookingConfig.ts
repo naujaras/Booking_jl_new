@@ -4,9 +4,9 @@
 
 // URLs de Webhooks de n8n (producción)
 // URLs de Webhooks de n8n (producción)
-export const N8N_WEBHOOK_URL = "https://n8n-n8n.npfusf.easypanel.host/webhook/b4920b99-1724-4169-8630-50b4b795911d";
-export const N8N_PRICES_WEBHOOK_URL = "https://n8n-n8n.npfusf.easypanel.host/webhook/854bd8ed-d900-4b55-a210-a08dac674651";
-export const N8N_BOOKING_WEBHOOK_URL = "https://n8n-n8n.npfusf.easypanel.host/webhook/a34d16d0-2cac-4847-845c-9b0a89f81f0c";
+export const N8N_WEBHOOK_URL = "https://n8n-n8n.1owldl.easypanel.host/webhook/b4920b99-1724-4169-8630-50b4b795911d";
+export const N8N_PRICES_WEBHOOK_URL = "https://n8n-n8n.1owldl.easypanel.host/webhook/854bd8ed-d900-4b55-a210-a08dac674651";
+export const N8N_BOOKING_WEBHOOK_URL = "https://n8n-n8n.1owldl.easypanel.host/webhook/a34d16d0-2cac-4847-845c-9b0a89f81f0c";
 
 // Tipos de datos
 export type RoomId = "atico" | "estudio" | "habitacion";
@@ -164,45 +164,6 @@ export const ROOMS: RoomConfig[] = [
     ]
   },
   {
-    id: "estudio",
-    name: "Estudio con jacuzzi XXL sin piscina",
-    description: "Amplio estudio con jacuzzi XXL y sofá",
-    image: "/rooms/estudio.jpg",
-    photosLink: "https://naujaras.com/#fotosyvideosestudio",
-    capacity: 2,
-    features: ["Jacuzzi XXL", "Sofá", "Más amplio", "Climatización"],
-    jornadas: [
-      {
-        id: "dia",
-        name: "Jornada Día",
-        description: "Perfecto para una escapada romántica diurna",
-        price: 70,
-        timeSlot: { start: "11:30", end: "18:30" }
-      },
-      {
-        id: "noche",
-        name: "Jornada Noche",
-        description: "Una noche íntima y especial",
-        price: 90,
-        timeSlot: { start: "20:00", end: "10:00", nextDay: true }
-      },
-      {
-        id: "dia_entero_manana",
-        name: "Día Entero (Entrada Mañana)",
-        description: "Disfruta desde la mañana hasta el día siguiente",
-        price: 130,
-        timeSlot: { start: "11:30", end: "10:00", nextDay: true }
-      },
-      {
-        id: "dia_entero_noche",
-        name: "Día Entero (Entrada Noche)",
-        description: "Desde la noche hasta la tarde siguiente",
-        price: 130,
-        timeSlot: { start: "20:00", end: "18:30", nextDay: true }
-      }
-    ]
-  },
-  {
     id: "habitacion",
     name: "Habitación con jacuzzi XXL sin piscina",
     description: "Habitación íntima con jacuzzi XXL",
@@ -238,6 +199,45 @@ export const ROOMS: RoomConfig[] = [
         description: "Desde la noche hasta la tarde siguiente",
         price: 120,
         timeSlot: { start: "21:00", end: "19:30", nextDay: true }
+      }
+    ]
+  },
+  {
+    id: "estudio",
+    name: "Estudio con jacuzzi XXL sin piscina",
+    description: "Amplio estudio con jacuzzi XXL y sofá",
+    image: "/rooms/estudio.jpg",
+    photosLink: "https://naujaras.com/#fotosyvideosestudio",
+    capacity: 2,
+    features: ["Jacuzzi XXL", "Sofá", "Más amplio", "Climatización"],
+    jornadas: [
+      {
+        id: "dia",
+        name: "Jornada Día",
+        description: "Perfecto para una escapada romántica diurna",
+        price: 70,
+        timeSlot: { start: "11:30", end: "18:30" }
+      },
+      {
+        id: "noche",
+        name: "Jornada Noche",
+        description: "Una noche íntima y especial",
+        price: 90,
+        timeSlot: { start: "20:00", end: "10:00", nextDay: true }
+      },
+      {
+        id: "dia_entero_manana",
+        name: "Día Entero (Entrada Mañana)",
+        description: "Disfruta desde la mañana hasta el día siguiente",
+        price: 130,
+        timeSlot: { start: "11:30", end: "10:00", nextDay: true }
+      },
+      {
+        id: "dia_entero_noche",
+        name: "Día Entero (Entrada Noche)",
+        description: "Desde la noche hasta la tarde siguiente",
+        price: 130,
+        timeSlot: { start: "20:00", end: "18:30", nextDay: true }
       }
     ]
   }
@@ -546,13 +546,16 @@ export async function checkAvailability(date: Date, roomId: RoomId): Promise<Ava
     nextDay.setDate(nextDay.getDate() + 1);
     const endDateTime = formatDateTimeLocal(nextDay, '23:59');
 
+    // Map room ID to the name expected by n8n Switch nodes (Ático, Estudio, Habitación)
+    const n8nRoomName = roomId === 'atico' ? 'Ático' : (roomId === 'estudio' ? 'Estudio' : 'Habitación');
+
     const response = await fetch(N8N_WEBHOOK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'check_availability',
         room_id: roomId,
-        room_name: room?.name || roomId,
+        room_name: n8nRoomName,
         date_start: startDateTime,
         date_end: endDateTime,
         date_formatted: date.toLocaleDateString('es-ES', {
