@@ -4,9 +4,9 @@
 
 // URLs de Webhooks de n8n (producción)
 // URLs de Webhooks de n8n (producción)
-export const N8N_WEBHOOK_URL = "https://n8n-n8n.npfusf.easypanel.host/webhook/b4920b99-1724-4169-8630-50b4b795911d";
-export const N8N_PRICES_WEBHOOK_URL = "https://n8n-n8n.npfusf.easypanel.host/webhook/854bd8ed-d900-4b55-a210-a08dac674651";
-export const N8N_BOOKING_WEBHOOK_URL = "https://n8n-n8n.npfusf.easypanel.host/webhook/a34d16d0-2cac-4847-845c-9b0a89f81f0c";
+export const N8N_WEBHOOK_URL = "https://n8n-n8n.1owldl.easypanel.host/webhook/b4920b99-1724-4169-8630-50b4b795911d";
+export const N8N_PRICES_WEBHOOK_URL = "https://n8n-n8n.1owldl.easypanel.host/webhook/854bd8ed-d900-4b55-a210-a08dac674651";
+export const N8N_BOOKING_WEBHOOK_URL = "https://n8n-n8n.1owldl.easypanel.host/webhook/a34d16d0-2cac-4847-845c-9b0a89f81f0c";
 
 // Tipos de datos
 export type RoomId = "atico" | "estudio" | "habitacion";
