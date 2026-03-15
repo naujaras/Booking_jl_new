@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { format, startOfToday } from "date-fns";
 import { es } from "date-fns/locale";
-import { CalendarIcon, Home, Building, BedDouble, CheckCircle2, Loader2, Clock, ExternalLink } from "lucide-react";
+import { CalendarIcon, CheckCircle2, Loader2, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -35,12 +35,6 @@ interface StepSearchProps {
   onJornadaChange: (jornada: JornadaType, price?: number) => void;
   onNext: () => void;
 }
-
-const roomIcons: Record<RoomId, React.ReactNode> = {
-  atico: <Home className="h-6 w-6" />,
-  estudio: <Building className="h-6 w-6" />,
-  habitacion: <BedDouble className="h-6 w-6" />
-};
 
 export function StepSearch({
   selectedRoom,
@@ -114,15 +108,7 @@ export function StepSearch({
   };
 
   return (
-    <div className="space-y-8">
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-serif font-semibold text-foreground">
-          Elige tu escapada perfecta
-        </h2>
-        <p className="text-muted-foreground">
-          Selecciona la estancia y fecha para tu momento especial
-        </p>
-      </div>
+    <div className="space-y-6">
 
       {/* Room Selection */}
       <div className="space-y-4">
@@ -132,7 +118,7 @@ export function StepSearch({
             <div
               key={room.id}
               className={cn(
-                "relative p-6 rounded-xl border-2 transition-all duration-300 text-left cursor-pointer",
+                "relative p-4 rounded-xl border-2 transition-all duration-300 text-center cursor-pointer min-h-[80px] flex items-center justify-center",
                 "hover:border-primary/50 hover:shadow-md",
                 selectedRoom === room.id
                   ? "border-primary bg-primary/5 shadow-md"
@@ -141,30 +127,14 @@ export function StepSearch({
               onClick={() => onRoomChange(room.id)}
             >
               {selectedRoom === room.id && (
-                <CheckCircle2 className="absolute top-3 right-3 h-5 w-5 text-primary" />
+                <CheckCircle2 className="absolute top-2 right-2 h-4 w-4 text-primary" />
               )}
-              <div className="space-y-3">
-                <div className={cn(
-                  "inline-flex p-3 rounded-lg",
-                  selectedRoom === room.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                )}>
-                  {roomIcons[room.id]}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-foreground">{room.name}</h3>
-                  <p className="text-sm text-muted-foreground mt-1">{room.description}</p>
-                </div>
-                <div className="flex flex-wrap gap-1.5 mt-3">
-                  {room.features.slice(0, 2).map((feature) => (
-                    <span
-                      key={feature}
-                      className="text-xs px-2 py-1 rounded-full bg-secondary text-secondary-foreground"
-                    >
-                      {feature}
-                    </span>
-                  ))}
-                </div>
-              </div>
+              <h3 className={cn(
+                "font-semibold text-sm sm:text-base leading-tight px-2",
+                selectedRoom === room.id ? "text-primary" : "text-foreground"
+              )}>
+                {room.name}
+              </h3>
             </div>
           ))}
         </div>
