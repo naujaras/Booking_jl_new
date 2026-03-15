@@ -3,9 +3,10 @@
 // ============================================
 
 // URLs de Webhooks de n8n (producción)
-export const N8N_WEBHOOK_URL = "https://n8n-n8n.1owldl.easypanel.host/webhook/b4920b99-1724-4169-8630-50b4b795911d";
-export const N8N_PRICES_WEBHOOK_URL = "https://n8n-n8n.1owldl.easypanel.host/webhook/854bd8ed-d900-4b55-a210-a08dac674651";
-export const N8N_BOOKING_WEBHOOK_URL = "https://n8n-n8n.1owldl.easypanel.host/webhook/a34d16d0-2cac-4847-845c-9b0a89f81f0c";
+// URLs de Webhooks de n8n (producción)
+export const N8N_WEBHOOK_URL = "https://n8n-n8n.npfusf.easypanel.host/webhook/b4920b99-1724-4169-8630-50b4b795911d";
+export const N8N_PRICES_WEBHOOK_URL = "https://n8n-n8n.npfusf.easypanel.host/webhook/854bd8ed-d900-4b55-a210-a08dac674651";
+export const N8N_BOOKING_WEBHOOK_URL = "https://n8n-n8n.npfusf.easypanel.host/webhook/a34d16d0-2cac-4847-845c-9b0a89f81f0c";
 
 // Tipos de datos
 export type RoomId = "atico" | "estudio" | "habitacion";
@@ -592,7 +593,8 @@ export async function checkAvailability(date: Date, roomId: RoomId): Promise<Ava
 // Función para obtener precios dinámicos desde n8n
 export async function fetchJornadaPrices(date: Date, roomId: RoomId): Promise<JornadaPrices | null> {
   try {
-    const room = getRoomById(roomId);
+    // Map room ID to the name expected by n8n Switch nodes (Ático, Estudio, Habitación)
+    const n8nRoomName = roomId === 'atico' ? 'Ático' : (roomId === 'estudio' ? 'Estudio' : 'Habitación');
 
     // Formatear fecha como dd/mm/yyyy
     const day = String(date.getDate()).padStart(2, '0');
@@ -604,7 +606,7 @@ export async function fetchJornadaPrices(date: Date, roomId: RoomId): Promise<Jo
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        room_name: room?.name || roomId,
+        room_name: n8nRoomName,
         room_id: roomId,
         date: dateFormatted
       })
@@ -688,13 +690,15 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
       fechaSalida = formatDateTimeSpanish(exitDate, jornada.timeSlot.end);
     }
 
+    const n8nRoomName = booking.room === 'atico' ? 'Ático' : (booking.room === 'estudio' ? 'Estudio' : 'Habitación');
+
     const response = await fetch(N8N_BOOKING_WEBHOOK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         // Datos de la estancia
         room_id: booking.room,
-        room_name: room?.name,
+        room_name: n8nRoomName,
         fecha: booking.date ? formatDateLocal(booking.date) : null,
         fecha_entrada: fechaEntrada,
         fecha_salida: fechaSalida,
@@ -739,10 +743,16 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
     const data = await response.json();
 
     // Extraer URL del contrato de la respuesta del webhook
-    // La respuesta viene como array: [{ submitters: [{ embed_src: "..." }] }]
+    // La respuesta puede venir en varios formatos según el flujo (PANEL WEB o FINAL)
     let contractUrl: string | undefined;
+    
+    // Formato 1: Array de Docuseal [{ submitters: [{ embed_src: "..." }] }]
     if (Array.isArray(data) && data[0]?.submitters?.[0]?.embed_src) {
       contractUrl = data[0].submitters[0].embed_src;
+    } 
+    // Formato 2: Objeto directo { contractUrl: "..." }
+    else if (data.contractUrl) {
+      contractUrl = data.contractUrl;
     }
 
     if (!contractUrl) {
