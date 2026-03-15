@@ -53,6 +53,7 @@ const initialBookingData: BookingData = {
     pack: null,
     personasExtra: 0
   },
+  seguroCancelacion: false,
   clientData: initialClientData,
   commentFields: {
     generales: "",
@@ -170,6 +171,10 @@ export function BookingWizard() {
 
   const handleCommentsChange = (comments: string) => {
     setBooking({ ...booking, comments });
+  };
+
+  const handleSeguroChange = (seguroCancelacion: boolean) => {
+    setBooking({ ...booking, seguroCancelacion });
   };
 
   const handleReset = () => {
@@ -292,6 +297,7 @@ export function BookingWizard() {
               onNext={() => setCurrentStep(7)}
               onReset={handleReset}
               onPendingVerification={handlePaymentPendingVerification}
+              onSeguroChange={handleSeguroChange}
             />
           )}
 

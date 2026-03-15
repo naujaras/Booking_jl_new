@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { CreditCard, Smartphone, Building2, ChevronDown, ChevronUp, ExternalLink, Loader2, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, AlertTriangle } from "lucide-react";
+import { CreditCard, Smartphone, Building2, ChevronDown, ChevronUp, ExternalLink, Loader2, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, AlertTriangle, Shield, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -7,6 +7,7 @@ import { es } from "date-fns/locale";
 import {
   BookingData,
   calculateTotalPrice,
+  calculateInsurancePrice,
   getRoomById,
   getJornadaForRoom,
   getEffectiveEmail
@@ -26,6 +27,7 @@ interface StepPaymentProps {
   onNext: () => void;
   onReset: () => void;
   onPendingVerification: () => void;
+  onSeguroChange: (seguro: boolean) => void;
 }
 
 type PaymentMethod = "card" | "bizum" | "transfer" | null;
@@ -37,7 +39,7 @@ interface PaymentStatusResponse {
   paid_at?: string;
 }
 
-export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerification }: StepPaymentProps) {
+export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerification, onSeguroChange }: StepPaymentProps) {
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(null);
   const [expandedMethod, setExpandedMethod] = useState<PaymentMethod>("card");
   const [paymentState, setPaymentState] = useState<PaymentState>("selecting");
@@ -46,9 +48,11 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
   const [copied, setCopied] = useState<string | null>(null);
   const [attempts, setAttempts] = useState(0);
   const [isManualChecking, setIsManualChecking] = useState(false);
+  const [showInsuranceInfo, setShowInsuranceInfo] = useState(false);
 
   const userEmail = getEffectiveEmail(booking.clientData.email);
   const totalPrice = calculateTotalPrice(booking);
+  const insurancePrice = calculateInsurancePrice(booking);
   const room = booking.room ? getRoomById(booking.room) : null;
   const jornada = booking.room && booking.jornada ? getJornadaForRoom(booking.room, booking.jornada) : null;
 
@@ -165,11 +169,14 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
           room: room?.name,
           date: booking.date ? format(booking.date, "yyyy-MM-dd") : null,
           jornada: jornada?.name,
-          concept: paymentConcept
+          concept: paymentConcept,
+          insurance: booking.seguroCancelacion // Informar si lleva seguro
         })
       });
 
       const data = await response.json();
+      // ... rest of the function
+
 
       // Esperamos que n8n devuelva una URL de pago
       const paymentUrl = Array.isArray(data) ? data[0]?.url : data?.url;
@@ -627,6 +634,140 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
       <div className="bg-primary text-primary-foreground rounded-xl p-6 text-center">
         <p className="text-sm opacity-90">Total a pagar</p>
         <p className="text-4xl font-bold">{totalPrice}€</p>
+        {booking.seguroCancelacion && (
+          <p className="text-xs opacity-75 mt-1">(incluye {insurancePrice}€ de seguro de cancelación)</p>
+        )}
+      </div>
+
+      {/* Seguro de Cancelación - Flujo simplificado para usuarios "cazurritos" */}
+      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+        <div className="p-5 space-y-4">
+          <div className="flex items-start gap-4">
+            <div className="p-2.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-1">
+              <Shield className="h-6 w-6" />
+            </div>
+            <div className="flex-1 space-y-2">
+              <p className="text-base text-foreground leading-relaxed">
+                Existe la posibilidad de contratar un seguro de cancelación de la reserva con{" "}
+                <button
+                  onClick={() => setShowInsuranceInfo(!showInsuranceInfo)}
+                  className="font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 underline decoration-2 underline-offset-4 decoration-indigo-200 dark:decoration-indigo-800 transition-all"
+                >
+                  EUROP ASSISTANCE
+                </button>.
+              </p>
+              <p className="text-sm text-muted-foreground italic">
+                Tenga en cuenta que NAUJARÁS no devuelve el dinero de la reserva, solo permite cambios de fecha.
+              </p>
+            </div>
+          </div>
+
+          {/* Info desplegable con el checkbox al final */}
+          {showInsuranceInfo && (
+            <div className="mt-4 space-y-5 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="p-5 bg-indigo-50/30 dark:bg-indigo-950/20 rounded-xl border border-indigo-100 dark:border-indigo-900/50 text-sm leading-relaxed text-foreground space-y-4">
+                <p>
+                  Hemos buscado una aseguradora con prestigio y buen servicio para que pueda asegurar la cancelación de su reserva.
+                </p>
+                <p>
+                  Esta aseguradora es <strong>EUROP ASSISTANCE</strong>, aunque si usted quiere puede buscar otra y asegurarla en la que prefiera.
+                </p>
+                <p>
+                  Por un <strong>5% del importe de la estancia</strong> puede asegurar la cancelación por si tiene algún contratiempo imprevisto justificado que le impida asistir.
+                </p>
+                
+                <div className="bg-white/50 dark:bg-black/20 p-4 rounded-lg border border-indigo-100 dark:border-indigo-900/50">
+                  <p className="text-xs text-muted-foreground leading-normal">
+                    <strong>Nota:</strong> El seguro lo contrata usted. Nosotros no somos intermediarios ni cobramos comisión. Solo le informamos de esta opción por su seguridad.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="font-semibold text-indigo-900 dark:text-indigo-300">En caso de tener que cancelar:</p>
+                  <ol className="list-decimal list-inside space-y-2 ml-1 text-muted-foreground">
+                    <li>Infórmenos a nosotros de la cancelación.</li>
+                    <li>Contacte con la aseguradora para reclamar el importe.</li>
+                  </ol>
+                </div>
+
+                <div className="p-4 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/50 rounded-lg">
+                  <p className="text-xs text-amber-800 dark:text-amber-400">
+                    <strong>⚠️ Importante:</strong> El reembolso depende exclusivamente de la aseguradora. Si esta deniega el caso por no estar en sus condiciones, NAUJARAS no devolverá el importe.
+                  </p>
+                </div>
+
+                {/* Aviso 72h dinámico */}
+                {(() => {
+                  const hoursToBooking = booking.date 
+                    ? (booking.date.getTime() - new Date().getTime()) / (1000 * 60 * 60)
+                    : 100;
+                  const isLastMinute = hoursToBooking < 72;
+
+                  return (
+                    <div className={cn(
+                      "p-4 rounded-lg border space-y-2 transition-colors",
+                      isLastMinute 
+                        ? "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900 shadow-sm"
+                        : "bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-800"
+                    )}>
+                      <p className={cn(
+                        "text-xs font-bold uppercase tracking-wider",
+                        isLastMinute ? "text-red-700 dark:text-red-400" : "text-gray-700 dark:text-gray-400"
+                      )}>
+                        {isLastMinute ? "🚨 AVISO URGENTE: Reserva de Última Hora" : "Nota para reservas rápidas"}
+                      </p>
+                      <p className="text-xs leading-normal">
+                        Si faltan menos de 72 horas para su reserva, le recomendamos encarecidamente contratar el seguro <strong>en el mismo momento</strong> de abonar la reserva para evitar los 3 días de carencia del seguro.
+                      </p>
+                    </div>
+                  );
+                })()}
+
+                {/* El Checkbox que hace la magia */}
+                <div className="pt-6 border-t border-indigo-100 dark:border-indigo-900/50">
+                  <label className={cn(
+                    "flex items-center gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer",
+                    booking.seguroCancelacion 
+                      ? "bg-indigo-600 border-indigo-700 text-white shadow-md ring-4 ring-indigo-100 dark:ring-indigo-900/20" 
+                      : "bg-white dark:bg-gray-900 border-indigo-100 dark:border-indigo-900 hover:border-indigo-300"
+                  )}>
+                    <div className="relative flex items-center justify-center">
+                      <input
+                        type="checkbox"
+                        checked={booking.seguroCancelacion}
+                        onChange={(e) => onSeguroChange(e.target.checked)}
+                        className="h-6 w-6 rounded border-2 border-indigo-300 text-white focus:ring-transparent accent-white cursor-pointer"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <span className="block font-bold text-sm">
+                        Sí, deseo contratar el seguro de cancelación
+                      </span>
+                      <span className={cn(
+                        "block text-xs mt-0.5",
+                        booking.seguroCancelacion ? "text-indigo-100" : "text-muted-foreground"
+                      )}>
+                        Se incrementará automáticamente un 5% (+{insurancePrice}€)
+                      </span>
+                    </div>
+                    {booking.seguroCancelacion && <CheckCircle2 className="h-5 w-5 text-indigo-200" />}
+                  </label>
+                </div>
+
+                <div className="text-center">
+                  <a
+                    href="https://europ-assistance.es/seguros-de-viaje/cancelacion-estancia"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline inline-flex items-center gap-1"
+                  >
+                    Ver web oficial de Europ Assistance <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Opciones de pago */}
