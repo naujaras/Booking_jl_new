@@ -77,6 +77,7 @@ export interface BookingData {
     pack: PackType | null;
     personasExtra: number;
   };
+  seguroCancelacion: boolean; // Seguro de cancelación Europ Assistance (5%)
   clientData: ClientData;
 }
 
@@ -91,6 +92,9 @@ export const initialClientData: ClientData = {
 };
 
 // Initial booking data for forms
+// Porcentaje del seguro de cancelación
+export const INSURANCE_PERCENTAGE = 0.05;
+
 export function initialBookingData(): BookingData {
   return {
     room: null,
@@ -107,6 +111,7 @@ export function initialBookingData(): BookingData {
       pack: null,
       personasExtra: 0,
     },
+    seguroCancelacion: false,
     clientData: initialClientData,
     commentFields: {
       generales: "",
@@ -317,8 +322,45 @@ export function calculateTotalPrice(booking: BookingData): number {
   if (canAddPersonasExtra(booking.room, booking.jornada)) {
     total += booking.extras.personasExtra * PERSONA_EXTRA_PRICE;
   }
+
+  // Seguro de cancelación (5% del total de la estancia)
+  if (booking.seguroCancelacion) {
+    total += Math.round(total * INSURANCE_PERCENTAGE * 100) / 100;
+  }
   
   return total;
+}
+
+// Función para calcular el precio del seguro (antes de añadirlo al total)
+export function calculateInsurancePrice(booking: BookingData): number {
+  let baseTotal = 0;
+
+  if (booking.room && booking.jornada) {
+    if (booking.jornadaPrice !== null && booking.jornadaPrice !== undefined) {
+      baseTotal += booking.jornadaPrice;
+    } else {
+      const jornada = getJornadaForRoom(booking.room, booking.jornada);
+      if (jornada) {
+        baseTotal += jornada.price;
+      }
+    }
+  }
+  
+  if (booking.extras.decoracion) {
+    const decoration = DECORATIONS.find(d => d.id === booking.extras.decoracion);
+    if (decoration) baseTotal += decoration.price;
+  }
+  
+  if (booking.extras.pack) {
+    const pack = PACKS.find(p => p.id === booking.extras.pack);
+    if (pack) baseTotal += pack.price;
+  }
+  
+  if (canAddPersonasExtra(booking.room, booking.jornada)) {
+    baseTotal += booking.extras.personasExtra * PERSONA_EXTRA_PRICE;
+  }
+
+  return Math.round(baseTotal * INSURANCE_PERCENTAGE * 100) / 100;
 }
 
 export function formatTimeSlot(timeSlot: TimeSlot): string {
