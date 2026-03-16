@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { format, startOfToday } from "date-fns";
 import { es } from "date-fns/locale";
-import { CalendarIcon, CheckCircle2, Loader2, Clock } from "lucide-react";
+import { CalendarIcon, CheckCircle2, Loader2, Clock, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -178,12 +178,13 @@ export function StepSearch({
             "flex items-center gap-2 p-3 rounded-lg text-sm",
             isChecking && "bg-muted text-muted-foreground",
             hasAvailableJornadas && "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300",
-            availabilityResult && !hasAvailableJornadas && "bg-destructive/10 text-destructive"
+            availabilityResult && !hasAvailableJornadas && "bg-destructive/10 text-destructive",
+            !isChecking && !availabilityResult && "bg-destructive/10 text-destructive"
           )}>
             {isChecking ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Verificando disponibilidad...</span>
+                <span>Verificando disponibilidad en tiempo real...</span>
               </>
             ) : hasAvailableJornadas ? (
               <>
@@ -194,11 +195,17 @@ export function StepSearch({
                     : `${availabilityResult!.availableJornadas.length} jornada(s) disponible(s)`}
                 </span>
               </>
-            ) : availabilityResult ? (
+            ) : availabilityResult && availabilityResult.availableJornadas.length === 0 ? (
               <>
-                <span>No hay jornadas disponibles para esta fecha. Por favor, elige otra.</span>
+                <AlertTriangle className="h-4 w-4" />
+                <span>No hay jornadas disponibles para esta fecha.</span>
               </>
-            ) : null}
+            ) : (
+              <>
+                <AlertTriangle className="h-4 w-4" />
+                <span>Error al conectar con el servidor. Por favor, reintenta en unos segundos.</span>
+              </>
+            )}
           </div>
         )}
 
