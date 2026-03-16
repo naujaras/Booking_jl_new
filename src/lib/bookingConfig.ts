@@ -164,45 +164,6 @@ export const ROOMS: RoomConfig[] = [
     ]
   },
   {
-    id: "habitacion",
-    name: "Habitación con jacuzzi XXL sin piscina",
-    description: "Habitación íntima con jacuzzi XXL",
-    image: "/rooms/habitacion.jpg",
-    photosLink: "https://naujaras.com/#habitacion",
-    capacity: 2,
-    features: ["Jacuzzi XXL", "Ambiente íntimo", "Climatización"],
-    jornadas: [
-      {
-        id: "dia",
-        name: "Jornada Día",
-        description: "Ideal para una tarde romántica",
-        price: 60,
-        timeSlot: { start: "13:30", end: "19:30" }
-      },
-      {
-        id: "noche",
-        name: "Jornada Noche",
-        description: "Noche de ensueño en pareja",
-        price: 80,
-        timeSlot: { start: "21:00", end: "12:00", nextDay: true }
-      },
-      {
-        id: "dia_entero_manana",
-        name: "Día Entero (Entrada Mañana)",
-        description: "Desde el mediodía hasta el día siguiente",
-        price: 120,
-        timeSlot: { start: "13:30", end: "12:00", nextDay: true }
-      },
-      {
-        id: "dia_entero_noche",
-        name: "Día Entero (Entrada Noche)",
-        description: "Desde la noche hasta la tarde siguiente",
-        price: 120,
-        timeSlot: { start: "21:00", end: "19:30", nextDay: true }
-      }
-    ]
-  },
-  {
     id: "estudio",
     name: "Estudio con jacuzzi XXL sin piscina",
     description: "Amplio estudio con jacuzzi XXL y sofá",
@@ -238,6 +199,45 @@ export const ROOMS: RoomConfig[] = [
         description: "Desde la noche hasta la tarde siguiente",
         price: 130,
         timeSlot: { start: "20:00", end: "18:30", nextDay: true }
+      }
+    ]
+  },
+  {
+    id: "habitacion",
+    name: "Habitación con jacuzzi XXL sin piscina",
+    description: "Habitación íntima con jacuzzi XXL",
+    image: "/rooms/habitacion.jpg",
+    photosLink: "https://naujaras.com/#habitacion",
+    capacity: 2,
+    features: ["Jacuzzi XXL", "Ambiente íntimo", "Climatización"],
+    jornadas: [
+      {
+        id: "dia",
+        name: "Jornada Día",
+        description: "Ideal para una tarde romántica",
+        price: 60,
+        timeSlot: { start: "13:30", end: "19:30" }
+      },
+      {
+        id: "noche",
+        name: "Jornada Noche",
+        description: "Noche de ensueño en pareja",
+        price: 80,
+        timeSlot: { start: "21:00", end: "12:00", nextDay: true }
+      },
+      {
+        id: "dia_entero_manana",
+        name: "Día Entero (Entrada Mañana)",
+        description: "Desde el mediodía hasta el día siguiente",
+        price: 120,
+        timeSlot: { start: "13:30", end: "12:00", nextDay: true }
+      },
+      {
+        id: "dia_entero_noche",
+        name: "Día Entero (Entrada Noche)",
+        description: "Desde la noche hasta la tarde siguiente",
+        price: 120,
+        timeSlot: { start: "21:00", end: "19:30", nextDay: true }
       }
     ]
   }
@@ -534,19 +534,18 @@ export function getAvailableJornadas(
   return available;
 }
 
-// Función para verificar disponibilidad via n8n webhook
-// Devuelve los eventos y las jornadas disponibles
 export async function checkAvailability(date: Date, roomId: RoomId): Promise<AvailabilityResult> {
-  try {
-    const room = getRoomById(roomId);
+  const room = getRoomById(roomId);
+  const jornadasIds = room?.jornadas.map(j => j.id) || [];
 
-    // Crear rango de fechas: día seleccionado 00:00 hasta día siguiente 23:59
+  try {
+    // Crear rango de fechas local (Madrid) 00:00 a 23:59 del día siguiente
     const startDateTime = formatDateTimeLocal(date, '00:00');
     const nextDay = new Date(date);
     nextDay.setDate(nextDay.getDate() + 1);
     const endDateTime = formatDateTimeLocal(nextDay, '23:59');
 
-    // Map room ID to the name expected by n8n Switch nodes (Ático, Estudio, Habitación)
+    // Mapeo exacto de nombres para el Switch de n8n
     const n8nRoomName = roomId === 'atico' ? 'Ático' : (roomId === 'estudio' ? 'Estudio' : 'Habitación');
 
     const response = await fetch(N8N_WEBHOOK_URL, {
@@ -559,39 +558,34 @@ export async function checkAvailability(date: Date, roomId: RoomId): Promise<Ava
         date_start: startDateTime,
         date_end: endDateTime,
         date_formatted: date.toLocaleDateString('es-ES', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
         })
-      })
+      }),
+      signal: AbortSignal.timeout ? AbortSignal.timeout(8000) : undefined
     });
 
-    if (!response.ok) {
-      console.error('Error en respuesta del webhook:', response.status);
-      return { events: [], availableJornadas: [] };
-    }
+    if (!response.ok) throw new Error(`Status ${response.status}`);
 
     const data = await response.json();
     console.log('Respuesta disponibilidad:', data);
 
-    // Parsear eventos
     let events: CalendarEvent[] = [];
-
     if (Array.isArray(data)) {
-      events = data.filter(e =>
-        e && typeof e === 'object' && Object.keys(e).length > 0 && e.start && e.end
-      );
-    } else {
-      console.warn('La respuesta de n8n no es un array:', data);
+      events = data.filter(e => e && e.start && e.end);
+    } else if (data && data.busy && Array.isArray(data.busy)) {
+      events = data.busy.map((b: any, i: number) => ({
+        id: `busy-${i}`,
+        start: { dateTime: b.start },
+        end: { dateTime: b.end }
+      }));
     }
 
-    // Calcular jornadas disponibles
     const availableJornadas = getAvailableJornadas(events, roomId, date);
-
     return { events, availableJornadas };
+
   } catch (error) {
-    console.error('Error verificando disponibilidad:', error);
+    console.error('Error crítico en disponibilidad:', error);
+    // Ya no devolvemos todas las jornadas. Devolvemos vacío para bloquear la reserva si el sistema falla.
     return { events: [], availableJornadas: [] };
   }
 }
@@ -749,23 +743,20 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
     const data = await response.json();
 
     // Extraer URL del contrato de la respuesta del webhook
-    // La respuesta puede venir en varios formatos según el flujo (PANEL WEB o FINAL)
     let contractUrl: string | undefined;
     
-    // Formato 1: Array de Docuseal [{ submitters: [{ embed_src: "..." }] }]
+    // 1. Formato Docuseal
     if (Array.isArray(data) && data[0]?.submitters?.[0]?.embed_src) {
       contractUrl = data[0].submitters[0].embed_src;
     } 
-    // Formato 2: Objeto directo { contractUrl: "..." }
-    else if (data.contractUrl) {
+    // 2. Formato JSON objeto
+    else if (data && data.contractUrl) {
       contractUrl = data.contractUrl;
     }
-
+    
+    // Si no hay URL, lanzamos error
     if (!contractUrl) {
-      return {
-        success: false,
-        message: 'El sistema no ha podido generar el enlace del contrato. Por favor, contacta con nosotros para completar la reserva manualmente.'
-      };
+      throw new Error("El sistema no pudo generar el enlace del contrato. Por favor, inténtelo de nuevo.");
     }
 
     return {
