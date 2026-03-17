@@ -73,6 +73,9 @@ export function StepSearch({
         setJornadaPrices(pricesData);
         setIsChecking(false);
 
+        console.log('Resultados de disponibilidad:', availabilityData);
+        console.log('Precios obtenidos:', pricesData);
+
         // Si hay jornadas disponibles, mostrar el popup
         if (availabilityData.availableJornadas.length > 0) {
           setShowJornadaDialog(true);
@@ -132,49 +135,23 @@ export function StepSearch({
             <div
               key={room.id}
               className={cn(
-                "relative p-6 rounded-xl border-2 transition-all duration-300 text-left cursor-pointer",
+                "relative p-4 rounded-xl border-2 transition-all duration-300 text-center cursor-pointer min-h-[100px] flex items-center justify-center",
                 "hover:border-primary/50 hover:shadow-md",
                 selectedRoom === room.id
-                  ? "border-primary bg-primary/5 shadow-md"
-                  : "border-border bg-card"
+                   ? "border-primary bg-primary/5 shadow-md"
+                   : "border-border bg-card"
               )}
               onClick={() => onRoomChange(room.id)}
             >
               {selectedRoom === room.id && (
-                <CheckCircle2 className="absolute top-3 right-3 h-5 w-5 text-primary" />
+                <CheckCircle2 className="absolute top-2 right-2 h-4 w-4 text-primary" />
               )}
-              <div className="space-y-3">
-                <div className={cn(
-                  "inline-flex p-3 rounded-lg",
-                  selectedRoom === room.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                )}>
-                  {roomIcons[room.id]}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-foreground">{room.name}</h3>
-                  <p className="text-sm text-muted-foreground mt-1">{room.description}</p>
-                </div>
-                <div className="flex flex-wrap gap-1.5 mt-3">
-                  {room.features.slice(0, 2).map((feature) => (
-                    <span
-                      key={feature}
-                      className="text-xs px-2 py-1 rounded-full bg-secondary text-secondary-foreground"
-                    >
-                      {feature}
-                    </span>
-                  ))}
-                </div>
-                <a
-                  href={room.photosLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  Ver fotos y vídeos
-                </a>
-              </div>
+              <h3 className={cn(
+                "font-semibold text-sm sm:text-base leading-tight px-2",
+                selectedRoom === room.id ? "text-primary" : "text-foreground"
+              )}>
+                {room.name}
+              </h3>
             </div>
           ))}
         </div>

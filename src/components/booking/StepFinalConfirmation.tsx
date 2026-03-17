@@ -57,6 +57,8 @@ export function StepFinalConfirmation({ booking, onReset, pendingVerification = 
         if (jornada.timeSlot.nextDay) {
           exitDate.setDate(exitDate.getDate() + 1);
         }
+        const [exitHour, exitMin] = jornada.timeSlot.end.split(':').map(Number);
+        exitDate.setHours(exitHour, exitMin, 0, 0);
         dateEnd = formatDateTimeISO(exitDate, jornada.timeSlot.end);
       }
 
@@ -87,6 +89,12 @@ export function StepFinalConfirmation({ booking, onReset, pendingVerification = 
         pack: booking.extras.pack,
         personasExtra: booking.extras.personasExtra,
         comentarios: booking.comments ?? "",
+        commentFields: booking.commentFields,
+        observaciones_completas: [
+          booking.commentFields?.generales,
+          booking.commentFields?.horaLlegada ? `HORA LLEGADA: ${booking.commentFields.horaLlegada}` : null,
+          booking.commentFields?.pagoManual ? `PAGO MANUAL: ${booking.commentFields.pagoManual}` : null
+        ].filter(Boolean).join("\n\n"),
 
         // Precio
         totalPrice: totalPrice,
@@ -304,7 +312,7 @@ export function StepFinalConfirmation({ booking, onReset, pendingVerification = 
       </div>
 
       {/* Resumen de la reserva */}
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
         <div className="bg-primary/5 border-b border-border p-4">
           <h3 className="font-semibold text-foreground text-center">Resumen de tu reserva</h3>
         </div>

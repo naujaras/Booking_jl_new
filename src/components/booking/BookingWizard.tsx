@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { StepSearch } from "./StepSearch";
 import { StepExtras } from "./StepExtras";
@@ -52,7 +52,13 @@ const initialBookingData: BookingData = {
     pack: null,
     personasExtra: 0
   },
-  clientData: initialClientData
+  seguroCancelacion: false,
+  clientData: initialClientData,
+  commentFields: {
+    generales: "",
+    horaLlegada: "",
+    pagoManual: ""
+  }
 };
 
 const getInitialBookingData = (): BookingData => {
@@ -71,17 +77,20 @@ const getInitialBookingData = (): BookingData => {
 
   let parsedJornada: JornadaType | null = null;
   if (slotParam) {
-    const s = slotParam.toLowerCase();
-    if (s.includes("mañana") || s.includes("manana")) {
-      parsedJornada = "dia_entero_manana";
-    } else if (s.includes("entero") && s.includes("noche")) {
-      parsedJornada = "dia_entero_noche";
-    } else if (s.includes("entero")) {
-      parsedJornada = "dia_entero_manana";
-    } else if (s.includes("noche")) {
-      parsedJornada = "noche";
-    } else if (s.includes("día") || s.includes("dia")) {
-      parsedJornada = "dia";
+    const slotMap: Record<string, JornadaType> = {
+      "Día": "dia",
+      "Noche": "noche",
+      "Día Entero (mañana)": "dia_entero_manana",
+      "Día Entero (noche)": "dia_entero_noche"
+    };
+    if (slotMap[slotParam]) {
+      parsedJornada = slotMap[slotParam];
+    } else {
+      const s = slotParam.toLowerCase();
+      if (s.includes("mañana") || s.includes("manana")) parsedJornada = "dia_entero_manana";
+      else if (s.includes("noche") && s.includes("entero")) parsedJornada = "dia_entero_noche";
+      else if (s.includes("noche")) parsedJornada = "noche";
+      else if (s.includes("día") || s.includes("dia")) parsedJornada = "dia";
     }
   }
 
@@ -104,6 +113,22 @@ export function BookingWizard() {
   });
   const [paymentPendingVerification, setPaymentPendingVerification] = useState(false);
 
+  // Sincronizar con cambios en la URL (importante para redirecciones del Hub)
+  useEffect(() => {
+    const data = getInitialBookingData();
+    if (data.room || data.date || data.jornada) {
+      setBooking(prev => ({
+        ...prev,
+        room: data.room || prev.room,
+        date: data.date || prev.date,
+        jornada: data.jornada || prev.jornada
+      }));
+      if (data.room && data.date && data.jornada && currentStep === 1) {
+        setCurrentStep(2);
+      }
+    }
+  }, []);
+
   const handleRoomChange = (room: RoomId) => {
     setBooking({ ...booking, room, jornada: null, extras: { ...booking.extras, personasExtra: 0 } });
   };
@@ -113,7 +138,6 @@ export function BookingWizard() {
   };
 
   const handleJornadaChange = (jornada: JornadaType, price?: number) => {
-    // Reset personasExtra if changing from ático día to another option
     const shouldResetPersonas = !(booking.room === "atico" && jornada === "dia");
     setBooking({
       ...booking,
@@ -132,7 +156,6 @@ export function BookingWizard() {
       extras: {
         ...booking.extras,
         decoracion,
-        // Reset detalles si se deselecciona la decoración
         decoracionDetails: decoracion ? booking.extras.decoracionDetails : { iniciales: "", numero: "" }
       }
     });
@@ -160,8 +183,16 @@ export function BookingWizard() {
     setBooking({ ...booking, clientData });
   };
 
+  const handleCommentFieldsChange = (fields: { generales: string; horaLlegada: string; pagoManual: string }) => {
+    setBooking({ ...booking, commentFields: fields });
+  };
+
   const handleCommentsChange = (comments: string) => {
     setBooking({ ...booking, comments });
+  };
+
+  const handleSeguroChange = (seguroCancelacion: boolean) => {
+    setBooking({ ...booking, seguroCancelacion });
   };
 
   const handleReset = () => {
@@ -179,13 +210,11 @@ export function BookingWizard() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Progress Bar */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="max-w-3xl mx-auto px-4 py-4">
           <div className="flex items-start justify-between">
             {STEPS.map((step, index) => (
               <div key={step.id} className="flex items-center flex-1 last:flex-none">
-                {/* Step circle and label */}
                 <div className="flex flex-col items-center">
                   <div className={cn(
                     "flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-colors",
@@ -195,16 +224,13 @@ export function BookingWizard() {
                   )}>
                     {step.id}
                   </div>
-                  <span
-                    className={cn(
-                      "hidden sm:block text-xs mt-2 text-center transition-colors whitespace-nowrap",
-                      currentStep >= step.id ? "text-foreground" : "text-muted-foreground"
-                    )}
-                  >
+                  <span className={cn(
+                    "hidden sm:block text-xs mt-2 text-center transition-colors whitespace-nowrap",
+                    currentStep >= step.id ? "text-foreground" : "text-muted-foreground"
+                  )}>
                     {step.name}
                   </span>
                 </div>
-                {/* Connector line */}
                 {index < STEPS.length - 1 && (
                   <div className={cn(
                     "hidden sm:block flex-1 h-0.5 mx-2 mt-4 transition-colors",
@@ -217,7 +243,6 @@ export function BookingWizard() {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="space-y-8">
           {currentStep === 1 && (
@@ -264,6 +289,7 @@ export function BookingWizard() {
               onBack={() => setCurrentStep(3)}
               onNext={() => setCurrentStep(5)}
               onCommentsChange={handleCommentsChange}
+              onCommentFieldsChange={handleCommentFieldsChange}
             />
           )}
 
@@ -283,6 +309,7 @@ export function BookingWizard() {
               onNext={() => setCurrentStep(7)}
               onReset={handleReset}
               onPendingVerification={handlePaymentPendingVerification}
+              onSeguroChange={handleSeguroChange}
             />
           )}
 
@@ -294,7 +321,6 @@ export function BookingWizard() {
             />
           )}
 
-          {/* Floating Price Summary */}
           {showPriceSummary && (
             <div className="fixed bottom-4 right-4 w-72 hidden lg:block">
               <PriceSummary booking={booking} />

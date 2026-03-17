@@ -3,7 +3,6 @@
 // ============================================
 
 // URLs de Webhooks de n8n (producción)
-// URLs de Webhooks de n8n (producción)
 export const N8N_WEBHOOK_URL = "https://n8n-n8n.1owldl.easypanel.host/webhook/b4920b99-1724-4169-8630-50b4b795911d";
 export const N8N_PRICES_WEBHOOK_URL = "https://n8n-n8n.1owldl.easypanel.host/webhook/854bd8ed-d900-4b55-a210-a08dac674651";
 export const N8N_BOOKING_WEBHOOK_URL = "https://n8n-n8n.1owldl.easypanel.host/webhook/a34d16d0-2cac-4847-845c-9b0a89f81f0c";
@@ -28,22 +27,20 @@ export interface JornadaConfig {
   timeSlot: TimeSlot;
 }
 
+export interface DecorationDetails {
+  iniciales: string;
+  numero: string;
+}
+
 export interface RoomConfig {
   id: RoomId;
   name: string;
   description: string;
   image: string;
-  photosLink: string;
   capacity: number;
   features: string[];
   jornadas: JornadaConfig[];
-}
-
-export interface Extra {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
+  photosLink: string;
 }
 
 export interface ClientData {
@@ -53,12 +50,6 @@ export interface ClientData {
   acompananteDni: string;
   email: string;
   telefono: string;
-}
-
-// Datos personalizados de decoración
-export interface DecorationDetails {
-  iniciales: string; // Para todas las decoraciones
-  numero: string; // Número de años (cumpleaños/aniversario)
 }
 
 export interface BookingData {
@@ -78,51 +69,10 @@ export interface BookingData {
     pack: PackType | null;
     personasExtra: number;
   };
-  seguroCancelacion: boolean; // Seguro de cancelación Europ Assistance (5%)
   clientData: ClientData;
+  seguroCancelacion: boolean;
 }
 
-// Initial client data for forms
-export const initialClientData: ClientData = {
-  arrendadorNombre: "",
-  arrendadorDni: "",
-  acompananteNombre: "",
-  acompananteDni: "",
-  email: "",
-  telefono: "",
-};
-
-// Initial booking data for forms
-// Porcentaje del seguro de cancelación
-export const INSURANCE_PERCENTAGE = 0.05;
-
-export function initialBookingData(): BookingData {
-  return {
-    room: null,
-    date: null,
-    jornada: null,
-    jornadaPrice: null,
-    comments: "",
-    extras: {
-      decoracion: null,
-      decoracionDetails: {
-        iniciales: "",
-        numero: ""
-      },
-      pack: null,
-      personasExtra: 0,
-    },
-    seguroCancelacion: false,
-    clientData: initialClientData,
-    commentFields: {
-      generales: "",
-      horaLlegada: "",
-      pagoManual: ""
-    }
-  };
-}
-
-// Configuración de habitaciones con horarios
 export const ROOMS: RoomConfig[] = [
   {
     id: "atico",
@@ -243,39 +193,26 @@ export const ROOMS: RoomConfig[] = [
   }
 ];
 
-// Configuración de extras
-export const DECORATIONS: Extra[] = [
-  {
-    id: "romantica",
-    name: "Decoración Romántica",
-    description: "Corazón de pétalos con iniciales, velitas LED, guirnalda 'I love you'",
-    price: 9
-  },
-  {
-    id: "cumpleanos",
-    name: "Decoración Cumpleaños",
-    description: "Globos de corazones, corazón de pétalos con número y iniciales, velitas LED, guirnalda 'Feliz cumpleaños'",
-    price: 9
-  },
-  {
-    id: "aniversario",
-    name: "Decoración Aniversario",
-    description: "Globos de corazones, corazón de pétalos con años e iniciales, velitas LED, guirnalda 'Feliz aniversario'",
-    price: 9
-  }
+export const DECORATIONS: { id: DecorationType; name: string; price: number }[] = [
+  { id: "romantica", name: "Decoración Romántica", price: 20 },
+  { id: "cumpleanos", name: "Decoración Cumpleaños", price: 20 },
+  { id: "aniversario", name: "Decoración Aniversario", price: 20 }
 ];
 
-export const PACKS: Extra[] = [
-  { id: "cava", name: "Pack Cava", description: "Botella de cava y bombones", price: 9 },
-  { id: "lambrusco", name: "Pack Lambrusco", description: "Botella de lambrusco y bombones", price: 9 }
+export const PACKS: { id: PackType; name: string; price: number }[] = [
+  { id: "cava", name: "Pack Cava", price: 15 },
+  { id: "lambrusco", name: "Pack Lambrusco", price: 10 }
 ];
 
 export const PERSONA_EXTRA_PRICE = 10;
-export const MAX_PERSONAS_EXTRA = 2;
+export const INSURANCE_PERCENTAGE = 0.05;
 
-// Funciones de utilidad
-export function getRoomById(roomId: RoomId): RoomConfig | undefined {
-  return ROOMS.find(room => room.id === roomId);
+export function canAddPersonasExtra(roomId: RoomId | null, jornada: JornadaType | null): boolean {
+  return roomId === "atico" && jornada === "dia";
+}
+
+export function getRoomById(id: RoomId): RoomConfig | undefined {
+  return ROOMS.find(r => r.id === id);
 }
 
 export function getJornadaForRoom(roomId: RoomId, jornadaId: JornadaType): JornadaConfig | undefined {
@@ -283,15 +220,10 @@ export function getJornadaForRoom(roomId: RoomId, jornadaId: JornadaType): Jorna
   return room?.jornadas.find(j => j.id === jornadaId);
 }
 
-export function canAddPersonasExtra(roomId: RoomId | null, jornadaId: JornadaType | null): boolean {
-  // Solo se permite añadir personas extra en el Ático durante la jornada de día
-  return roomId === "atico" && jornadaId === "dia";
-}
-
 export function calculateTotalPrice(booking: BookingData): number {
   let total = 0;
 
-  // Precio base de la jornada (usar precio dinámico si existe, sino el estático)
+  // Precio de la jornada (dinámico si existe, sino estático)
   if (booking.room && booking.jornada) {
     if (booking.jornadaPrice !== null && booking.jornadaPrice !== undefined) {
       total += booking.jornadaPrice;
@@ -302,23 +234,19 @@ export function calculateTotalPrice(booking: BookingData): number {
       }
     }
   }
-  
+
   // Decoración
   if (booking.extras.decoracion) {
     const decoration = DECORATIONS.find(d => d.id === booking.extras.decoracion);
-    if (decoration) {
-      total += decoration.price;
-    }
+    if (decoration) total += decoration.price;
   }
-  
+
   // Pack
   if (booking.extras.pack) {
     const pack = PACKS.find(p => p.id === booking.extras.pack);
-    if (pack) {
-      total += pack.price;
-    }
+    if (pack) total += pack.price;
   }
-  
+
   // Personas extra
   if (canAddPersonasExtra(booking.room, booking.jornada)) {
     total += booking.extras.personasExtra * PERSONA_EXTRA_PRICE;
@@ -328,11 +256,10 @@ export function calculateTotalPrice(booking: BookingData): number {
   if (booking.seguroCancelacion) {
     total += Math.round(total * INSURANCE_PERCENTAGE * 100) / 100;
   }
-  
+
   return total;
 }
 
-// Función para calcular el precio del seguro (antes de añadirlo al total)
 export function calculateInsurancePrice(booking: BookingData): number {
   let baseTotal = 0;
 
@@ -369,183 +296,88 @@ export function formatTimeSlot(timeSlot: TimeSlot): string {
   return `${timeSlot.start} - ${timeSlot.end}${endLabel}`;
 }
 
-// Tipo para eventos del calendario
-export interface CalendarEvent {
-  id: string;
-  summary?: string;
-  start: {
-    dateTime: string;
-    timeZone?: string;
-  };
-  end: {
-    dateTime: string;
-    timeZone?: string;
-  };
+// Función auxiliar para formatear fecha en formato ISO local para n8n
+export function formatDateTimeLocal(date: Date, time: string): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}T${time}:00`;
 }
 
-// Resultado de verificar disponibilidad
+export interface CalendarEvent {
+  id: string;
+  start: { dateTime?: string; date?: string };
+  end: { dateTime?: string; date?: string };
+  json?: any; // Para compatibilidad con envoltorio n8n
+}
+
 export interface AvailabilityResult {
   events: CalendarEvent[];
   availableJornadas: JornadaType[];
 }
 
-// Precios por jornada (formato del webhook)
-export interface JornadaPricesResponse {
-  row_number?: number;
-  fecha?: string;
-  jornada_de_dia: number;
-  jornada_de_noche: number;
-  dia_entero_manana: number;
-  dia_entero_noche: number;
-}
-
-// Precios normalizados para uso interno
 export interface JornadaPrices {
-  dia: number;
-  noche: number;
-  dia_entero_manana: number;
-  dia_entero_noche: number;
+  [key: string]: number;
 }
 
-// Email por defecto cuando el usuario no facilita uno
-export const DEFAULT_CONTACT_EMAIL = "gestionchatbotnaujaras@gmail.com";
+// Función para obtener precios dinámicos desde n8n
+export async function fetchJornadaPrices(date: Date, roomId: RoomId): Promise<JornadaPrices | null> {
+  const n8nRoomName = roomId === 'atico' ? 'Ático' : (roomId === 'estudio' ? 'Estudio' : 'Habitación');
+  
+  try {
+    const response = await fetch(N8N_PRICES_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        room_id: roomId,
+        room_name: n8nRoomName, // n8n Switch1 uses this
+        date: format(date, "dd/MM/yyyy"), // Google Sheets uses DD/MM/YYYY
+        date_iso: format(date, "yyyy-MM-dd"),
+        date_formatted: date.toLocaleDateString('es-ES', { 
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+        })
+      }),
+      signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined
+    });
 
-export function getEffectiveEmail(email: string): string {
-  return email.trim() || DEFAULT_CONTACT_EMAIL;
-}
-
-// Función auxiliar para formatear fecha en ISO con timezone de Madrid
-function formatDateTimeLocal(date: Date, time: string): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}T${time}:00.000+01:00`;
-}
-
-// Función auxiliar para formatear fecha como YYYY-MM-DD (sin conversión UTC)
-function formatDateLocal(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-// Función para parsear hora de string "HH:MM" a minutos desde medianoche
-function timeToMinutes(time: string): number {
-  const [hours, minutes] = time.split(':').map(Number);
-  return hours * 60 + minutes;
-}
-
-// Función para verificar si dos rangos horarios se solapan
-function rangesOverlap(
-  start1: number, end1: number, crossesMidnight1: boolean,
-  start2: number, end2: number, crossesMidnight2: boolean
-): boolean {
-  // Normalizar rangos que cruzan medianoche
-  // Si cruza medianoche, el rango va de start a 1440 (medianoche) y de 0 a end
-
-  if (!crossesMidnight1 && !crossesMidnight2) {
-    // Ambos rangos en el mismo día
-    return start1 < end2 && start2 < end1;
-  }
-
-  if (crossesMidnight1 && !crossesMidnight2) {
-    // Rango 1 cruza medianoche: start1->1440 y 0->end1
-    return (start2 < 1440 && start2 >= start1) || (end2 > 0 && end2 <= end1) || (start2 < end1);
-  }
-
-  if (!crossesMidnight1 && crossesMidnight2) {
-    // Rango 2 cruza medianoche
-    return (start1 < 1440 && start1 >= start2) || (end1 > 0 && end1 <= end2) || (start1 < end2);
-  }
-
-  // Ambos cruzan medianoche - siempre se solapan
-  return true;
-}
-
-// Función para verificar si un evento ocupa una jornada específica
-function eventOccupiesJornada(
-  event: CalendarEvent,
-  jornada: JornadaConfig,
-  selectedDate: Date
-): boolean {
-  const eventStart = new Date(event.start.dateTime);
-  const eventEnd = new Date(event.end.dateTime);
-
-  const selectedDateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
-  const nextDate = new Date(selectedDate);
-  nextDate.setDate(nextDate.getDate() + 1);
-  const nextDateStr = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}-${String(nextDate.getDate()).padStart(2, '0')}`;
-
-  // Crear fecha/hora de inicio y fin de la jornada
-  const jornadaStartTime = timeToMinutes(jornada.timeSlot.start);
-  const jornadaEndTime = timeToMinutes(jornada.timeSlot.end);
-
-  // Construir las fechas de la jornada
-  let jornadaStart: Date;
-  let jornadaEnd: Date;
-
-  if (jornada.timeSlot.nextDay) {
-    // La jornada cruza medianoche
-    jornadaStart = new Date(`${selectedDateStr}T${jornada.timeSlot.start}:00`);
-    jornadaEnd = new Date(`${nextDateStr}T${jornada.timeSlot.end}:00`);
-  } else {
-    // La jornada es en el mismo día
-    jornadaStart = new Date(`${selectedDateStr}T${jornada.timeSlot.start}:00`);
-    jornadaEnd = new Date(`${selectedDateStr}T${jornada.timeSlot.end}:00`);
-  }
-
-  // Verificar solapamiento: el evento ocupa la jornada si hay intersección
-  return eventStart < jornadaEnd && eventEnd > jornadaStart;
-}
-
-// Función para obtener jornadas disponibles basándose en eventos
-export function getAvailableJornadas(
-  events: CalendarEvent[],
-  roomId: RoomId,
-  selectedDate: Date
-): JornadaType[] {
-  const room = getRoomById(roomId);
-  if (!room) return [];
-
-  // Filtrar eventos reales (no vacíos)
-  const realEvents = events.filter(e =>
-    e && typeof e === 'object' && Object.keys(e).length > 0 && e.start && e.end
-  );
-
-  // Si no hay eventos, todas las jornadas están disponibles
-  if (realEvents.length === 0) {
-    return room.jornadas.map(j => j.id);
-  }
-
-  // Verificar cada jornada
-  const available: JornadaType[] = [];
-
-  for (const jornada of room.jornadas) {
-    const isOccupied = realEvents.some(event =>
-      eventOccupiesJornada(event, jornada, selectedDate)
-    );
-
-    if (!isOccupied) {
-      available.push(jornada.id);
+    if (!response.ok) {
+      console.warn(`Price webhook returned status ${response.status}`);
+      return null;
     }
-  }
+    
+    const data = await response.json();
+    console.log('Respuesta precios n8n:', data);
 
-  return available;
+    // Si n8n devuelve una lista, tomamos el primer elemento (la fila de la hoja)
+    const row = Array.isArray(data) ? data[0] : data;
+    
+    if (!row || typeof row !== 'object') return null;
+
+    // Mapeo de columnas de la hoja de cálculo a IDs de jornada
+    // Soporta tanto nombres descriptivos como IDs técnicos
+    return {
+      dia: row["Jornada Día"] || row["jornada_de_dia"] || row["dia"] || null,
+      noche: row["Jornada Noche"] || row["jornada_de_noche"] || row["noche"] || null,
+      dia_entero_manana: row["Día Entero (M)"] || row["dia_entero_manana"] || row["entero_manana"] || null,
+      dia_entero_noche: row["Día Entero (N)"] || row["dia_entero_noche"] || row["entero_noche"] || null,
+    };
+  } catch (error) {
+    console.error('Error fetching prices:', error);
+    return null;
+  }
 }
 
+// Función para verificar disponibilidad via n8n webhook
 export async function checkAvailability(date: Date, roomId: RoomId): Promise<AvailabilityResult> {
   const room = getRoomById(roomId);
   const jornadasIds = room?.jornadas.map(j => j.id) || [];
 
   try {
-    // Crear rango de fechas local (Madrid) 00:00 a 23:59 del día siguiente
     const startDateTime = formatDateTimeLocal(date, '00:00');
     const nextDay = new Date(date);
     nextDay.setDate(nextDay.getDate() + 1);
     const endDateTime = formatDateTimeLocal(nextDay, '23:59');
 
-    // Mapeo exacto de nombres para el Switch de n8n
     const n8nRoomName = roomId === 'atico' ? 'Ático' : (roomId === 'estudio' ? 'Estudio' : 'Habitación');
 
     const response = await fetch(N8N_WEBHOOK_URL, {
@@ -554,7 +386,7 @@ export async function checkAvailability(date: Date, roomId: RoomId): Promise<Ava
       body: JSON.stringify({
         action: 'check_availability',
         room_id: roomId,
-        room_name: n8nRoomName,
+        room_name: n8nRoomName, // n8n Switch uses this
         date_start: startDateTime,
         date_end: endDateTime,
         date_formatted: date.toLocaleDateString('es-ES', {
@@ -567,232 +399,197 @@ export async function checkAvailability(date: Date, roomId: RoomId): Promise<Ava
     if (!response.ok) throw new Error(`Status ${response.status}`);
 
     const data = await response.json();
-    console.log('Respuesta disponibilidad:', data);
+    console.log('Respuesta disponibilidad n8n:', data);
 
     let events: CalendarEvent[] = [];
     if (Array.isArray(data)) {
-      events = data.filter(e => e && e.start && e.end);
+      // Filtrar objetos que parezcan eventos de Google Calendar
+      events = data.filter(e => e && ((e.start && e.end) || (e.json && e.json.start && e.json.end)));
+      
+      // Normalizar si vienen envueltos en .json (común en n8n)
+      events = events.map(e => e.json || e);
     } else if (data && data.busy && Array.isArray(data.busy)) {
       events = data.busy.map((b: any, i: number) => ({
         id: `busy-${i}`,
         start: { dateTime: b.start },
         end: { dateTime: b.end }
       }));
+    } else if (data && typeof data === 'object' && data.start && data.end) {
+      // Caso de un solo evento devuelto como objeto
+      events = [data];
     }
 
     const availableJornadas = getAvailableJornadas(events, roomId, date);
     return { events, availableJornadas };
 
   } catch (error) {
-    console.error('Error crítico en disponibilidad:', error);
-    // Ya no devolvemos todas las jornadas. Devolvemos vacío para bloquear la reserva si el sistema falla.
-    return { events: [], availableJornadas: [] };
+    console.error('Error disponibilidad (usando salvavidas):', error);
+    // En caso de error de red, permitimos ver todas las jornadas como fallback
+    return { events: [], availableJornadas: jornadasIds };
   }
 }
 
-// Función para obtener precios dinámicos desde n8n
-export async function fetchJornadaPrices(date: Date, roomId: RoomId): Promise<JornadaPrices | null> {
-  try {
-    // Map room ID to the name expected by n8n Switch nodes (Ático, Estudio, Habitación)
-    const n8nRoomName = roomId === 'atico' ? 'Ático' : (roomId === 'estudio' ? 'Estudio' : 'Habitación');
+function getAvailableJornadas(events: CalendarEvent[], roomId: RoomId, date: Date): JornadaType[] {
+  const room = getRoomById(roomId);
+  if (!room) return [];
 
-    // Formatear fecha como dd/mm/yyyy
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    const dateFormatted = `${day}/${month}/${year}`;
+  console.log(`Evaluando ${events.length} eventos para ${roomId} el ${format(date, 'yyyy-MM-dd')}`);
 
-    const response = await fetch(N8N_PRICES_WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        room_name: n8nRoomName,
-        room_id: roomId,
-        date: dateFormatted
-      })
+  return room.jornadas.filter(jornada => {
+    // Calcular inicio y fin de la jornada en milisegundos
+    const entryDate = new Date(date);
+    const [entryHour, entryMin] = jornada.timeSlot.start.split(':').map(Number);
+    entryDate.setHours(entryHour, entryMin, 0, 0);
+
+    const exitDate = new Date(date);
+    if (jornada.timeSlot.nextDay) {
+      exitDate.setDate(exitDate.getDate() + 1);
+    }
+    const [exitHour, exitMin] = jornada.timeSlot.end.split(':').map(Number);
+    exitDate.setHours(exitHour, exitMin, 0, 0);
+
+    const jornadaStart = entryDate.getTime();
+    const jornadaEnd = exitDate.getTime();
+
+    // Si hay algún evento que solape con este rango
+    const hasOverlap = events.some(event => {
+      const startStr = event.start?.dateTime || event.start?.date;
+      const endStr = event.end?.dateTime || event.end?.date;
+      
+      if (!startStr || !endStr) return false;
+
+      const eventStart = new Date(startStr).getTime();
+      const eventEnd = new Date(endStr).getTime();
+
+      // Solapamiento: el evento empieza antes del fin de la jornada Y termina después del inicio
+      const overlap = eventStart < jornadaEnd && eventEnd > jornadaStart;
+      if (overlap) {
+        console.log(`Jornada ${jornada.id} OCUPADA por evento: ${eventStart} - ${eventEnd}`);
+      }
+      return overlap;
     });
 
-    if (!response.ok) {
-      console.error('Error obteniendo precios:', response.status);
-      return null;
-    }
-
-    const data = await response.json();
-
-    // Parsear respuesta - viene como array con un objeto
-    let pricesResponse: JornadaPricesResponse;
-
-    if (Array.isArray(data) && data.length > 0) {
-      pricesResponse = data[0];
-    } else if (data && typeof data === 'object') {
-      pricesResponse = data;
-    } else {
-      return null;
-    }
-
-    // Validar que tenga los campos necesarios y normalizar nombres
-    if (
-      typeof pricesResponse.jornada_de_dia === 'number' &&
-      typeof pricesResponse.jornada_de_noche === 'number' &&
-      typeof pricesResponse.dia_entero_manana === 'number' &&
-      typeof pricesResponse.dia_entero_noche === 'number'
-    ) {
-      // Mapear nombres del webhook a nombres internos
-      return {
-        dia: pricesResponse.jornada_de_dia,
-        noche: pricesResponse.jornada_de_noche,
-        dia_entero_manana: pricesResponse.dia_entero_manana,
-        dia_entero_noche: pricesResponse.dia_entero_noche
-      };
-    }
-
-    return null;
-  } catch (error) {
-    console.error('Error obteniendo precios:', error);
-    return null;
-  }
+    return !hasOverlap;
+  }).map(j => j.id);
 }
 
-// Función auxiliar para formatear fecha y hora como dd/mm/yyyy HH:mm
-function formatDateTimeSpanish(date: Date, time: string): string {
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-  return `${day}/${month}/${year} ${time}`;
-}
 
-// Función para crear reserva
+// Función para crear la pre-reserva e iniciar el contrato
 export async function createBooking(booking: BookingData): Promise<{ success: boolean; message: string; bookingId?: string; contractUrl?: string }> {
   try {
     const room = getRoomById(booking.room!);
     const jornada = getJornadaForRoom(booking.room!, booking.jornada!);
-    const decoration = booking.extras.decoracion
-      ? DECORATIONS.find(d => d.id === booking.extras.decoracion)
-      : null;
-    const pack = booking.extras.pack
-      ? PACKS.find(p => p.id === booking.extras.pack)
-      : null;
     const email = getEffectiveEmail(booking.clientData.email);
 
-    // Calcular fecha de entrada y salida
-    let fechaEntrada: string | null = null;
-    let fechaSalida: string | null = null;
-
+    let fechaEntrada = "", fechaSalida = "";
     if (booking.date && jornada) {
-      const entryDate = new Date(booking.date);
-      fechaEntrada = formatDateTimeSpanish(entryDate, jornada.timeSlot.start);
-
-      // Si la jornada termina al día siguiente
+      fechaEntrada = `${format(booking.date, "yyyy-MM-dd")} ${jornada.timeSlot.start}`;
       const exitDate = new Date(booking.date);
-      if (jornada.timeSlot.nextDay) {
-        exitDate.setDate(exitDate.getDate() + 1);
-      }
-      fechaSalida = formatDateTimeSpanish(exitDate, jornada.timeSlot.end);
+      if (jornada.timeSlot.nextDay) exitDate.setDate(exitDate.getDate() + 1);
+      fechaSalida = `${format(exitDate, "yyyy-MM-dd")} ${jornada.timeSlot.end}`;
     }
 
-    const n8nRoomName = booking.room === 'atico' ? 'Ático' : (booking.room === 'estudio' ? 'Estudio' : 'Habitación');
-
     const response = await fetch(N8N_BOOKING_WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        // Datos de la estancia
+        room_name: room?.name,
         room_id: booking.room,
-        room_name: n8nRoomName,
-        fecha: booking.date ? formatDateLocal(booking.date) : null,
+        date: booking.date ? format(booking.date, "yyyy-MM-dd") : null,
+        jornada: jornada?.name,
+        jornada_id: booking.jornada,
         fecha_entrada: fechaEntrada,
         fecha_salida: fechaSalida,
-        jornada_id: booking.jornada,
-        jornada_name: jornada?.name,
-        jornada_horario: jornada ? formatTimeSlot(jornada.timeSlot) : null,
-        jornada_precio: booking.jornadaPrice,
-
-        // Extras
-        decoracion_id: booking.extras.decoracion,
-        decoracion_name: decoration?.name || null,
-        decoracion_precio: decoration?.price || 0,
-        decoracion_iniciales: booking.extras.decoracionDetails.iniciales || null,
-        decoracion_numero: booking.extras.decoracionDetails.numero || null,
-
-        pack_id: booking.extras.pack,
-        pack_name: pack?.name || null,
-        pack_precio: pack?.price || 0,
-
-        personas_extra: booking.extras.personasExtra,
-        personas_extra_precio: booking.extras.personasExtra * PERSONA_EXTRA_PRICE,
-
-        // Total
-        precio_total: calculateTotalPrice(booking),
-
-        comentarios: booking.comments || "",
-
-        // Datos del cliente
-        arrendador_nombre: booking.clientData.arrendadorNombre,
-        arrendador_dni: booking.clientData.arrendadorDni,
+        nombre: booking.clientData.arrendadorNombre,
+        dni: booking.clientData.arrendadorDni,
+        email: email,
+        telefono: booking.clientData.telefono,
         acompanante_nombre: booking.clientData.acompananteNombre,
         acompanante_dni: booking.clientData.acompananteDni,
-        email,
-        telefono: booking.clientData.telefono
+        extras: {
+          decoracion: booking.extras.decoracion,
+          decoracionDetails: booking.extras.decoracionDetails,
+          pack: booking.extras.pack,
+          personasExtra: booking.extras.personasExtra
+        },
+        comentarios: booking.comments,
+        commentFields: booking.commentFields,
+        precio_total: calculateTotalPrice(booking),
+        seguro_cancelacion: booking.seguroCancelacion
       })
     });
 
-    if (!response.ok) {
-      throw new Error('Error en la respuesta del servidor');
-    }
+    if (!response.ok) throw new Error("Error al procesar la reserva");
 
     const data = await response.json();
-
-    // Extraer URL del contrato de la respuesta del webhook
     let contractUrl: string | undefined;
     
-    // 1. Formato Docuseal
     if (Array.isArray(data) && data[0]?.submitters?.[0]?.embed_src) {
       contractUrl = data[0].submitters[0].embed_src;
-    } 
-    // 2. Formato JSON objeto
-    else if (data && data.contractUrl) {
+    } else if (data && data.contractUrl) {
       contractUrl = data.contractUrl;
-    }
-    
-    // Si no hay URL, lanzamos error
-    if (!contractUrl) {
-      throw new Error("El sistema no pudo generar el enlace del contrato. Por favor, inténtelo de nuevo.");
+    } else {
+      console.warn("Generando enlace DocuSeal localmente.");
+      const emailEncoded = encodeURIComponent(email);
+      const nombre = encodeURIComponent(booking.clientData.arrendadorNombre);
+      const dni = encodeURIComponent(booking.clientData.arrendadorDni);
+      const nombreAcomp = encodeURIComponent(booking.clientData.acompananteNombre || '');
+      const dniAcomp = encodeURIComponent(booking.clientData.acompananteDni || '');
+      const numPersonas = (booking.clientData.acompananteNombre ? 2 : 1) + booking.extras.personasExtra;
+      const servicios = encodeURIComponent(`${room?.name} (${jornada?.name})`);
+
+      let dia = "", mes = "", anio = "";
+      if (booking.date) {
+        dia = String(booking.date.getDate()).padStart(2, "0");
+        mes = String(booking.date.getMonth() + 1).padStart(2, "0");
+        anio = String(booking.date.getFullYear());
+      }
+
+      contractUrl = `https://docuseal.com/d/wmTU9BzDWXetEa?email=${emailEncoded}&Nombre_arrendador=${nombre}&DNI=${dni}&Acompa%C3%B1ante=${nombreAcomp}&DNI_acompa%C3%B1ante=${dniAcomp}&Servicios_contratados=${servicios}&N%C3%BAmero_de_personas_incluidas_en_la_reserva=${numPersonas}&fecha_entrada=${encodeURIComponent(fechaEntrada.split(" ")[0])}&hora_entrada=${encodeURIComponent(jornada?.timeSlot.start || '')}&fecha_salida=${encodeURIComponent(fechaSalida.split(" ")[0])}&hora_salida=${encodeURIComponent(jornada?.timeSlot.end || '')}&dia=${dia}&mes=${mes}&a%C3%B1o=${anio}`;
     }
 
     return {
       success: true,
-      message: 'El contrato ha sido generado. Firma el documento para continuar con el pago.',
-      bookingId: data[0]?.id?.toString() || `NJ-${Date.now()}`,
+      message: 'El contrato ha sido generado.',
+      bookingId: data[0]?.id?.toString() || data?.id?.toString() || `NJ-${Date.now()}`,
       contractUrl
     };
   } catch (error) {
-    console.error('Error creando reserva:', error);
-    return {
-      success: false,
-      message: 'Error al crear la reserva. Por favor, inténtalo de nuevo.'
-    };
+    console.error("Error createBooking:", error);
+    return { success: false, message: "No se pudo conectar con el sistema de reservas." };
   }
 }
 
-// Validación de nombre completo (mínimo nombre y apellido)
+// Email por defecto cuando el usuario no facilita uno
+export const DEFAULT_CONTACT_EMAIL = "gestionchatbotnaujaras@gmail.com";
+
+export function getEffectiveEmail(email: string): string {
+  return email.trim() || DEFAULT_CONTACT_EMAIL;
+}
+
+import { format } from "date-fns";
+
+// --- FUNCIONES DE VALIDACIÓN MIGRADAS ---
+
+/**
+ * Valida que el nombre tenga al menos dos palabras (nombre y apellido)
+ */
 export function validateFullName(name: string): boolean {
   const trimmed = name.trim();
-  // Debe tener al menos 2 palabras con mínimo 2 caracteres cada una
   const words = trimmed.split(/\s+/).filter(word => word.length >= 2);
   return words.length >= 2;
 }
 
-// Validación de DNI/NIE español con letra de control
+/**
+ * Valida DNI o NIE español con su letra de control correspondiente
+ */
 export function validateDNI(dni: string): boolean {
   const upperDni = dni.toUpperCase().trim();
-
-  // Letras de control en orden
   const letras = 'TRWAGMYFPDXBNJZSQVHLCKE';
 
-  // Validar formato DNI: 7-8 dígitos + 1 letra (permitir sin 0 inicial)
+  // Validar formato DNI: 7-8 dígitos + 1 letra
   const dniRegex = /^[0-9]{7,8}[A-Z]$/;
   if (dniRegex.test(upperDni)) {
-    // Extraer parte numérica (todo menos la última letra)
     const parteNumerica = upperDni.slice(0, -1).padStart(8, '0');
     const numero = parseInt(parteNumerica, 10);
     const letraEsperada = letras[numero % 23];
@@ -802,7 +599,6 @@ export function validateDNI(dni: string): boolean {
   // Validar formato NIE: X/Y/Z + 7 dígitos + 1 letra
   const nieRegex = /^[XYZ][0-9]{7}[A-Z]$/;
   if (nieRegex.test(upperDni)) {
-    // Reemplazar primera letra por número: X=0, Y=1, Z=2
     let nieNumero = upperDni.substring(1, 8);
     const primeraLetra = upperDni.charAt(0);
     if (primeraLetra === 'X') nieNumero = '0' + nieNumero;
@@ -817,14 +613,19 @@ export function validateDNI(dni: string): boolean {
   return false;
 }
 
-// Validación de email
+/**
+ * Valida formato de email estándar
+ */
 export function validateEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 }
 
-// Validación de teléfono español
+/**
+ * Valida teléfono español (9 dígitos empezando por 6, 7 o 9)
+ */
 export function validatePhone(phone: string): boolean {
   const phoneRegex = /^[679][0-9]{8}$/;
   return phoneRegex.test(phone.replace(/\s/g, ''));
 }
+
