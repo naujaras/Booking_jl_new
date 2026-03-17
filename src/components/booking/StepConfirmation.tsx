@@ -22,7 +22,6 @@ interface StepConfirmationProps {
   onBack: () => void;
   onNext: () => void;
   onCommentsChange: (comments: string) => void;
-  onCommentFieldsChange: (fields: { generales: string; horaLlegada: string; pagoManual: string }) => void;
 }
 
 const RULE_SECTIONS = [
@@ -72,13 +71,7 @@ NO SE PODRÁ POSPONER LA RESERVA SI FALTAN MENOS DE 48 HORAS para la reserva.`
   }
 ];
 
-export function StepConfirmation({ 
-  booking, 
-  onBack, 
-  onNext, 
-  onCommentsChange, 
-  onCommentFieldsChange 
-}: StepConfirmationProps) {
+export function StepConfirmation({ booking, onBack, onNext, onCommentsChange }: StepConfirmationProps) {
   const [showRules, setShowRules] = useState(false);
   const [hasOpenedRules, setHasOpenedRules] = useState(false);
   const [acceptedRules, setAcceptedRules] = useState(false);
@@ -88,12 +81,6 @@ export function StepConfirmation({
   const decoration = booking.extras.decoracion ? DECORATIONS.find(d => d.id === booking.extras.decoracion) : null;
   const pack = booking.extras.pack ? PACKS.find(p => p.id === booking.extras.pack) : null;
   const totalPrice = calculateTotalPrice(booking);
-
-  const fields = booking.commentFields || { generales: "", horaLlegada: "", pagoManual: "" };
-
-  const handleFieldChange = (key: keyof typeof fields, value: string) => {
-    onCommentFieldsChange({ ...fields, [key]: value });
-  };
 
   return (
     <div className="space-y-8">
@@ -211,44 +198,17 @@ export function StepConfirmation({
         </div>
       </div>
 
-      {/* Observaciones estructuradas */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-serif font-semibold text-foreground">Observaciones de la reserva</h3>
-        
-        <div className="space-y-2">
-          <Label htmlFor="obs-generales">Observaciones generales</Label>
-          <Textarea
-            id="obs-generales"
-            placeholder="Algún detalle adicional que debamos saber..."
-            value={fields.generales}
-            onChange={(e) => handleFieldChange("generales", e.target.value)}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="obs-llegada">Hora estimada de llegada (si será más tarde de la apertura)</Label>
-          <Textarea 
-            id="obs-llegada"
-            placeholder="Ej: Llegaremos sobre las 22:30..."
-            value={fields.horaLlegada}
-            onChange={(e) => handleFieldChange("horaLlegada", e.target.value)}
-            className="h-20"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="obs-pago">Datos del pago manual (si aplica: Bizum, Transferencia...)</Label>
-          <Textarea
-            id="obs-pago"
-            placeholder="Indica aquí si has realizado un pago manual o tienes dudas..."
-            value={fields.pagoManual}
-            onChange={(e) => handleFieldChange("pagoManual", e.target.value)}
-            className="h-20"
-          />
-        </div>
-        
+      {/* Comentarios */}
+      <div className="space-y-2">
+        <Label htmlFor="comentarios">Comentarios para el propietario (opcional)</Label>
+        <Textarea
+          id="comentarios"
+          placeholder="Ej: Llegaremos sobre las 22:30, agradeceríamos check-in tardío."
+          value={booking.comments ?? ""}
+          onChange={(e) => onCommentsChange(e.target.value)}
+        />
         <p className="text-xs text-muted-foreground">
-          Esta información ayuda a Juan a gestionar mejor tu llegada y validación del pago.
+          Añade indicaciones especiales, horarios estimados o cualquier detalle que debamos saber.
         </p>
       </div>
 

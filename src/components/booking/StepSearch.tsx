@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { format, startOfToday } from "date-fns";
 import { es } from "date-fns/locale";
-import { CalendarIcon, CheckCircle2, Loader2, Clock, AlertTriangle } from "lucide-react";
+import { CalendarIcon, Home, Building, BedDouble, CheckCircle2, Loader2, Clock, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -35,6 +35,12 @@ interface StepSearchProps {
   onJornadaChange: (jornada: JornadaType, price?: number) => void;
   onNext: () => void;
 }
+
+const roomIcons: Record<RoomId, React.ReactNode> = {
+  atico: <Home className="h-6 w-6" />,
+  estudio: <Building className="h-6 w-6" />,
+  habitacion: <BedDouble className="h-6 w-6" />
+};
 
 export function StepSearch({
   selectedRoom,
@@ -108,7 +114,15 @@ export function StepSearch({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      <div className="text-center space-y-2">
+        <h2 className="text-2xl font-serif font-semibold text-foreground">
+          Elige tu escapada perfecta
+        </h2>
+        <p className="text-muted-foreground">
+          Selecciona la estancia y fecha para tu momento especial
+        </p>
+      </div>
 
       {/* Room Selection */}
       <div className="space-y-4">
@@ -118,7 +132,7 @@ export function StepSearch({
             <div
               key={room.id}
               className={cn(
-                "relative p-4 rounded-xl border-2 transition-all duration-300 text-center cursor-pointer min-h-[80px] flex items-center justify-center",
+                "relative p-6 rounded-xl border-2 transition-all duration-300 text-left cursor-pointer",
                 "hover:border-primary/50 hover:shadow-md",
                 selectedRoom === room.id
                   ? "border-primary bg-primary/5 shadow-md"
@@ -127,14 +141,40 @@ export function StepSearch({
               onClick={() => onRoomChange(room.id)}
             >
               {selectedRoom === room.id && (
-                <CheckCircle2 className="absolute top-2 right-2 h-4 w-4 text-primary" />
+                <CheckCircle2 className="absolute top-3 right-3 h-5 w-5 text-primary" />
               )}
-              <h3 className={cn(
-                "font-semibold text-sm sm:text-base leading-tight px-2",
-                selectedRoom === room.id ? "text-primary" : "text-foreground"
-              )}>
-                {room.name}
-              </h3>
+              <div className="space-y-3">
+                <div className={cn(
+                  "inline-flex p-3 rounded-lg",
+                  selectedRoom === room.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                )}>
+                  {roomIcons[room.id]}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">{room.name}</h3>
+                  <p className="text-sm text-muted-foreground mt-1">{room.description}</p>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  {room.features.slice(0, 2).map((feature) => (
+                    <span
+                      key={feature}
+                      className="text-xs px-2 py-1 rounded-full bg-secondary text-secondary-foreground"
+                    >
+                      {feature}
+                    </span>
+                  ))}
+                </div>
+                <a
+                  href={room.photosLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Ver fotos y vídeos
+                </a>
+              </div>
             </div>
           ))}
         </div>
@@ -178,13 +218,12 @@ export function StepSearch({
             "flex items-center gap-2 p-3 rounded-lg text-sm",
             isChecking && "bg-muted text-muted-foreground",
             hasAvailableJornadas && "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300",
-            availabilityResult && !hasAvailableJornadas && "bg-destructive/10 text-destructive",
-            !isChecking && !availabilityResult && "bg-destructive/10 text-destructive"
+            availabilityResult && !hasAvailableJornadas && "bg-destructive/10 text-destructive"
           )}>
             {isChecking ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Verificando disponibilidad en tiempo real...</span>
+                <span>Verificando disponibilidad...</span>
               </>
             ) : hasAvailableJornadas ? (
               <>
@@ -195,17 +234,11 @@ export function StepSearch({
                     : `${availabilityResult!.availableJornadas.length} jornada(s) disponible(s)`}
                 </span>
               </>
-            ) : availabilityResult && availabilityResult.availableJornadas.length === 0 ? (
+            ) : availabilityResult ? (
               <>
-                <AlertTriangle className="h-4 w-4" />
-                <span>No hay jornadas disponibles para esta fecha.</span>
+                <span>No hay jornadas disponibles para esta fecha. Por favor, elige otra.</span>
               </>
-            ) : (
-              <>
-                <AlertTriangle className="h-4 w-4" />
-                <span>Error al conectar con el servidor. Por favor, reintenta en unos segundos.</span>
-              </>
-            )}
+            ) : null}
           </div>
         )}
 

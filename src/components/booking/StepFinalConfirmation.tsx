@@ -87,12 +87,6 @@ export function StepFinalConfirmation({ booking, onReset, pendingVerification = 
         pack: booking.extras.pack,
         personasExtra: booking.extras.personasExtra,
         comentarios: booking.comments ?? "",
-        commentFields: booking.commentFields,
-        observaciones_completas: [
-          booking.commentFields?.generales,
-          booking.commentFields?.horaLlegada ? `HORA LLEGADA: ${booking.commentFields.horaLlegada}` : null,
-          booking.commentFields?.pagoManual ? `PAGO MANUAL: ${booking.commentFields.pagoManual}` : null
-        ].filter(Boolean).join("\n\n"),
 
         // Precio
         totalPrice: totalPrice,
