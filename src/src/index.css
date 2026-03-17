@@ -1,0 +1,105 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&family=Josefin+Sans:wght@300;400;700&family=League+Spartan:wght@700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Modo claro por defecto pero con colores oscuros de la marca */
+    --background: 0 0% 0%;
+    /* Negro Fondo Web */
+    --foreground: 0 0% 100%;
+    /* Texto Blanco */
+
+    --card: 206 40% 17%;
+    /* Hub --surface */
+    --card-foreground: 0 0% 100%;
+
+    --popover: 208 39% 23%;
+    /* Hub --surface2 */
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 199 90% 64%;
+    /* Hub --primary (#4fc3f7) */
+    --primary-foreground: 0 0% 0%;
+    /* Texto oscuro en botones primarios para mayor contraste */
+
+    --secondary: 201 98% 41%;
+    /* Hub --primary-dk (#0288d1) */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 206 40% 17%;
+    --muted-foreground: 202 24% 66%;
+    /* Hub --text-muted (#8eafc2) */
+
+    --accent: 199 90% 64%;
+    --accent-foreground: 0 0% 0%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 206 40% 27%;
+    /* Hub --border (#2a4a62) */
+    --input: 206 40% 27%;
+    --ring: 199 90% 64%;
+
+    --radius: 1rem;
+    /* Bordes redondeados del Hub */
+
+    --chart-1: 199 90% 64%;
+    --chart-2: 206 40% 17%;
+    --chart-3: 201 98% 41%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+
+  .dark {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+
+    --card: 206 40% 17%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 208 39% 23%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 199 90% 64%;
+    --primary-foreground: 0 0% 0%;
+
+    --secondary: 201 98% 41%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 206 40% 17%;
+    --muted-foreground: 202 24% 66%;
+
+    --accent: 199 90% 64%;
+    --accent-foreground: 0 0% 0%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 206 40% 27%;
+    --input: 206 40% 27%;
+    --ring: 199 90% 64%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-serif;
+  }
+}
