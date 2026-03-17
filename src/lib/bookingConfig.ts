@@ -426,9 +426,9 @@ export async function checkAvailability(date: Date, roomId: RoomId): Promise<Ava
     return { events, availableJornadas };
 
   } catch (error) {
-    console.error('Error disponibilidad (usando salvavidas):', error);
-    // En caso de error de red, permitimos ver todas las jornadas como fallback
-    return { events: [], availableJornadas: jornadasIds };
+    console.error('Error disponibilidad real:', error);
+    // Ya no hay salvavidas. Si falla la red, devolvemos error para que el usuario no reserve a ciegas.
+    throw error;
   }
 }
 
