@@ -59,45 +59,59 @@ export function StepSearch({
         setAvailabilityResult(null);
         setJornadaPrices(null);
 
-        // Consultar disponibilidad y precios en paralelo
-        const [availabilityData, pricesData] = await Promise.all([
-          checkAvailability(selectedDate, selectedRoom),
-          fetchJornadaPrices(selectedDate, selectedRoom)
-        ]);
+        try {
+          // Consultar disponibilidad y precios en paralelo
+          const [availabilityData, pricesData] = await Promise.all([
+            checkAvailability(selectedDate, selectedRoom),
+            fetchJornadaPrices(selectedDate, selectedRoom)
+          ]);
 
-        setAvailabilityResult(availabilityData);
-        setJornadaPrices(pricesData);
-        setIsChecking(false);
+          setAvailabilityResult(availabilityData);
+          setJornadaPrices(pricesData);
+          
+          console.log('Resultados de disponibilidad:', availabilityData);
+          console.log('Precios obtenidos:', pricesData);
 
-        console.log('Resultados de disponibilidad:', availabilityData);
-        console.log('Precios obtenidos:', pricesData);
-
-        // Si hay jornadas disponibles, mostrar el popup
-        if (availabilityData.availableJornadas.length > 0) {
-          setShowJornadaDialog(true);
+          // Si hay jornadas disponibles (con precio y hueco), mostrar el popup
+          // El chequeo real se hace abajo en availableJornadasConfig
+        } catch (error) {
+          console.error('Fallo crítico en búsqueda:', error);
+          // Al no haber salvavidas, availabilityResult seguirá siendo null y mostrará error
+        } finally {
+          setIsChecking(false);
         }
       }
     }
     checkDateAndPrices();
   }, [selectedRoom, selectedDate]);
 
-  const hasAvailableJornadas = availabilityResult && availabilityResult.availableJornadas.length > 0;
-  const canProceed = selectedRoom && selectedDate && selectedJornada && hasAvailableJornadas;
-
   // Obtener las jornadas del room actual para mostrar en el popup
+  // Filtrar por disponibilidad (GCal) Y por tener precio (Excel)
   const currentRoom = selectedRoom ? getRoomById(selectedRoom) : null;
   const availableJornadasConfig: JornadaConfig[] = currentRoom
-    ? currentRoom.jornadas.filter(j => availabilityResult?.availableJornadas.includes(j.id))
+    ? currentRoom.jornadas.filter(j => {
+        const isAvailable = availabilityResult?.availableJornadas.includes(j.id);
+        const hasPrice = jornadaPrices && jornadaPrices[j.id] && jornadaPrices[j.id] > 0;
+        return isAvailable && hasPrice;
+      })
     : [];
+
+  const hasAvailableJornadas = availableJornadasConfig.length > 0;
+  const canProceed = selectedRoom && selectedDate && selectedJornada && hasAvailableJornadas;
+
+  // Abrir diálogo automáticamente cuando hay resultados válidos
+  useEffect(() => {
+    if (hasAvailableJornadas && !selectedJornada && !isChecking) {
+      setShowJornadaDialog(true);
+    }
+  }, [hasAvailableJornadas, selectedJornada, isChecking]);
 
   // Obtener precio de una jornada (dinámico o estático como fallback)
   const getJornadaPrice = (jornadaId: JornadaType): number => {
-    if (jornadaPrices) {
-      return jornadaPrices[jornadaId] || 0;
+    if (jornadaPrices && jornadaPrices[jornadaId] !== undefined) {
+      return jornadaPrices[jornadaId];
     }
-    // Fallback a precio estático de la configuración
-    const jornada = currentRoom?.jornadas.find(j => j.id === jornadaId);
-    return jornada?.price || 0;
+    return 0; // No hay precio real del Excel
   };
 
   const handleJornadaSelect = (jornadaId: JornadaType) => {
