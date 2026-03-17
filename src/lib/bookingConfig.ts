@@ -207,6 +207,7 @@ export const PACKS: { id: PackType; name: string; price: number }[] = [
 ];
 
 export const PERSONA_EXTRA_PRICE = 10;
+export const MAX_PERSONAS_EXTRA = 2;
 export const INSURANCE_PERCENTAGE = 0.05;
 
 export function canAddPersonasExtra(roomId: RoomId | null, jornada: JornadaType | null): boolean {
