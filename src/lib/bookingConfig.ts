@@ -1,4 +1,6 @@
+import { format } from "date-fns";
 // ============================================
+
 // CONFIGURACIÓN DE NEGOCIO - NAUJARAS SEVILLA
 // ============================================
 
@@ -567,7 +569,6 @@ export function getEffectiveEmail(email: string): string {
   return email.trim() || DEFAULT_CONTACT_EMAIL;
 }
 
-import { format } from "date-fns";
 
 // --- FUNCIONES DE VALIDACIÓN MIGRADAS ---
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { format, startOfToday } from "date-fns";
 import { es } from "date-fns/locale";
-import { CalendarIcon, Home, Building, BedDouble, CheckCircle2, Loader2, Clock, ExternalLink } from "lucide-react";
+import { CalendarIcon, CheckCircle2, Loader2, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -36,11 +36,7 @@ interface StepSearchProps {
   onNext: () => void;
 }
 
-const roomIcons: Record<RoomId, React.ReactNode> = {
-  atico: <Home className="h-6 w-6" />,
-  estudio: <Building className="h-6 w-6" />,
-  habitacion: <BedDouble className="h-6 w-6" />
-};
+
 
 export function StepSearch({
   selectedRoom,
