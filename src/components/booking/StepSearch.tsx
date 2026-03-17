@@ -205,27 +205,31 @@ export function StepSearch({
             "flex items-center gap-2 p-3 rounded-lg text-sm",
             isChecking && "bg-muted text-muted-foreground",
             hasAvailableJornadas && "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300",
-            availabilityResult && !hasAvailableJornadas && "bg-destructive/10 text-destructive"
+            !isChecking && !hasAvailableJornadas && "bg-destructive/10 text-destructive"
           )}>
-            {isChecking ? (
+            {isChecking && (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Verificando disponibilidad...</span>
+                <span>Verificando disponibilidad en tiempo real...</span>
               </>
-            ) : hasAvailableJornadas ? (
+            )}
+            
+            {!isChecking && hasAvailableJornadas && (
               <>
                 <CheckCircle2 className="h-4 w-4" />
                 <span>
-                  {availabilityResult!.availableJornadas.length === 4
-                    ? "¡Todas las jornadas disponibles!"
-                    : `${availabilityResult!.availableJornadas.length} jornada(s) disponible(s)`}
+                   Encontramos {availableJornadasConfig.length} opciones disponibles con precio confirmado.
                 </span>
               </>
-            ) : availabilityResult ? (
-              <>
-                <span>No hay jornadas disponibles para esta fecha. Por favor, elige otra.</span>
-              </>
-            ) : null}
+            )}
+
+            {!isChecking && !hasAvailableJornadas && availabilityResult && (
+              <span>No hay plazas disponibles para esta combinación. Por favor, elige otra fecha o estancia.</span>
+            )}
+            
+            {!isChecking && !hasAvailableJornadas && !availabilityResult && (
+              <span>Error de conexión con el sistema de reservas. Recarga la página o inténtalo más tarde.</span>
+            )}
           </div>
         )}
 

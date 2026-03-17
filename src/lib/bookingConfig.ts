@@ -356,13 +356,21 @@ export async function fetchJornadaPrices(date: Date, roomId: RoomId): Promise<Jo
     
     if (!row || typeof row !== 'object') return null;
 
-    // Mapeo de columnas de la hoja de cálculo a IDs de jornada
-    // Soporta tanto nombres descriptivos como IDs técnicos
+    // Función para limpiar el precio del Excel (ej: " 119,00 € " -> 119)
+    const parseExcelPrice = (val: any): number | null => {
+      if (typeof val === 'number') return val;
+      if (typeof val !== 'string') return null;
+      // Eliminar espacios, símbolos de moneda y normalizar coma a punto
+      const cleaned = val.trim().replace(/[^\d.,-]/g, '').replace(',', '.');
+      const num = parseFloat(cleaned);
+      return isNaN(num) ? null : num;
+    };
+
     return {
-      dia: row["Jornada Día"] || row["jornada_de_dia"] || row["dia"] || null,
-      noche: row["Jornada Noche"] || row["jornada_de_noche"] || row["noche"] || null,
-      dia_entero_manana: row["Día Entero (M)"] || row["dia_entero_manana"] || row["entero_manana"] || null,
-      dia_entero_noche: row["Día Entero (N)"] || row["dia_entero_noche"] || row["entero_noche"] || null,
+      dia: parseExcelPrice(row.jornada_de_dia),
+      noche: parseExcelPrice(row.jornada_de_noche),
+      dia_entero_manana: parseExcelPrice(row.dia_entero_manana),
+      dia_entero_noche: parseExcelPrice(row.dia_entero_noche),
     };
   } catch (error) {
     console.error('Error fetching prices:', error);
