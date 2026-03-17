@@ -334,7 +334,7 @@ export async function fetchJornadaPrices(date: Date, roomId: RoomId): Promise<Jo
       body: JSON.stringify({
         room_id: roomId,
         room_name: n8nRoomName, // n8n Switch1 uses this
-        date: format(date, "dd/MM/yyyy"), // Google Sheets uses DD/MM/YYYY
+        date: format(date, "dd/MM/yyyy"), // Formato con ceros iniciales (ej: 02/03/2026) para match con Excel
         date_iso: format(date, "yyyy-MM-dd"),
         date_formatted: date.toLocaleDateString('es-ES', { 
           weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
@@ -426,9 +426,9 @@ export async function checkAvailability(date: Date, roomId: RoomId): Promise<Ava
     return { events, availableJornadas };
 
   } catch (error) {
-    console.error('Error disponibilidad (usando salvavidas):', error);
-    // En caso de error de red, permitimos ver todas las jornadas como fallback
-    return { events: [], availableJornadas: jornadasIds };
+    console.error('Error disponibilidad real:', error);
+    // Ya no hay salvavidas. Si falla la red, devolvemos error para que el usuario no reserve a ciegas.
+    throw error;
   }
 }
 
