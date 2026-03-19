@@ -290,6 +290,7 @@ export function BookingWizard() {
               onNext={() => setCurrentStep(5)}
               onCommentsChange={handleCommentsChange}
               onCommentFieldsChange={handleCommentFieldsChange}
+              onSeguroChange={handleSeguroChange}
             />
           )}
 
@@ -309,7 +310,6 @@ export function BookingWizard() {
               onNext={() => setCurrentStep(7)}
               onReset={handleReset}
               onPendingVerification={handlePaymentPendingVerification}
-              onSeguroChange={handleSeguroChange}
             />
           )}
 
