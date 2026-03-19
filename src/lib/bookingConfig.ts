@@ -74,6 +74,7 @@ export interface BookingData {
   };
   clientData: ClientData;
   seguroCancelacion: boolean;
+  paymentUrl?: string;
 }
 
 export const ROOMS: RoomConfig[] = [
@@ -491,7 +492,7 @@ function getAvailableJornadas(events: CalendarEvent[], roomId: RoomId, date: Dat
 
 
 // Función para crear la pre-reserva e iniciar el contrato
-export async function createBooking(booking: BookingData): Promise<{ success: boolean; message: string; bookingId?: string; contractUrl?: string }> {
+export async function createBooking(booking: BookingData): Promise<{ success: boolean; message: string; bookingId?: string; contractUrl?: string; paymentUrl?: string }> {
   try {
     const room = getRoomById(booking.room!);
     const jornada = getJornadaForRoom(booking.room!, booking.jornada!);
@@ -566,11 +567,14 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
       contractUrl = `https://docuseal.com/d/wmTU9BzDWXetEa?email=${emailEncoded}&Nombre_arrendador=${nombre}&DNI=${dni}&Acompa%C3%B1ante=${nombreAcomp}&DNI_acompa%C3%B1ante=${dniAcomp}&Servicios_contratados=${servicios}&N%C3%BAmero_de_personas_incluidas_en_la_reserva=${numPersonas}&fecha_entrada=${encodeURIComponent(fechaEntrada.split(" ")[0])}&hora_entrada=${encodeURIComponent(jornada?.timeSlot.start || '')}&fecha_salida=${encodeURIComponent(fechaSalida.split(" ")[0])}&hora_salida=${encodeURIComponent(jornada?.timeSlot.end || '')}&dia=${dia}&mes=${mes}&a%C3%B1o=${anio}`;
     }
 
+    const paymentUrl = Array.isArray(data) ? data[0]?.paymentUrl : data?.paymentUrl;
+
     return {
       success: true,
       message: 'El contrato ha sido generado.',
       bookingId: data[0]?.id?.toString() || data?.id?.toString() || `NJ-${Date.now()}`,
-      contractUrl
+      contractUrl,
+      paymentUrl
     };
   } catch (error) {
     console.error("Error createBooking:", error);
