@@ -406,7 +406,19 @@ export async function checkAvailability(date: Date, roomId: RoomId): Promise<Ava
 
     if (!response.ok) throw new Error(`Status ${response.status}`);
 
-    const data = await response.json();
+    const rawText = await response.text();
+    let data;
+    if (rawText && rawText.trim() !== '') {
+      try {
+        data = JSON.parse(rawText);
+      } catch (e) {
+        console.warn('La respuesta de n8n no es un JSON válido, asumiendo sin eventos:', rawText);
+        data = [];
+      }
+    } else {
+      data = [];
+    }
+    
     console.log('Respuesta disponibilidad n8n en APP:', data);
 
     let rawEvents: any[] = [];
