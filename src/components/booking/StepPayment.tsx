@@ -29,7 +29,7 @@ interface StepPaymentProps {
   onPendingVerification: () => void;
 }
 
-type PaymentMethod = "card" | "bizum" | "transfer" | null;
+type PaymentMethod = "card" | "bizum" | "transfer" | "cajero" | null;
 type PaymentState = "selecting" | "processing" | "waiting" | "timeout" | "completed" | "error";
 
 interface PaymentStatusResponse {
@@ -197,6 +197,11 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
 
   const handleTransferSelect = () => {
     setSelectedMethod("transfer");
+    setPaymentState("waiting");
+  };
+
+  const handleCajeroSelect = () => {
+    setSelectedMethod("cajero");
     setPaymentState("waiting");
   };
 
@@ -594,6 +599,76 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
     );
   }
 
+  // Estado: Esperando confirmación (Cajero)
+  if (paymentState === "waiting" && selectedMethod === "cajero") {
+    return (
+      <div className="space-y-8">
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl font-serif font-semibold text-foreground">
+            Ingreso en Cajero
+          </h2>
+          <p className="text-muted-foreground">
+            Acude a un cajero y realiza un ingreso en efectivo
+          </p>
+        </div>
+
+        <div className="bg-card border-2 border-primary rounded-xl p-6 space-y-4">
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground mb-1">Importe a pagar</p>
+            <p className="text-3xl font-bold text-primary">{totalPrice}€</p>
+          </div>
+
+          <div className="border-t border-border pt-4 space-y-3">
+            <div className="space-y-2">
+              <span className="text-sm text-muted-foreground">IBAN / Cuenta:</span>
+              <div className="flex items-center gap-2">
+                <span className="font-mono font-semibold text-sm bg-muted p-2 rounded flex-1">{IBAN}</span>
+                <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => copyToClipboard(IBAN.replace(/\s/g, ''), 'iban')}>
+                  {copied === 'iban' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-sm text-muted-foreground">Concepto:</span>
+              <div className="flex items-start gap-2">
+                <p className="text-sm font-medium bg-muted p-2 rounded flex-1">{paymentConcept}</p>
+                <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => copyToClipboard(paymentConcept, 'concept')}>
+                  {copied === 'concept' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+          <p className="text-sm text-amber-700 dark:text-amber-300 text-center">
+            <strong>Importante:</strong> Avisaremos a nuestro equipo para que compruebe la recepción del ingreso. Mantén tu resguardo hasta que se confirme.
+          </p>
+        </div>
+
+        <Button
+          onClick={onPendingVerification}
+          className="w-full h-14 text-lg font-medium bg-primary text-primary-foreground hover:bg-primary/90"
+        >
+          <Check className="mr-2 h-5 w-5" />
+          Ya he realizado el ingreso
+        </Button>
+
+        <Button
+          variant="ghost"
+          onClick={() => {
+            setPaymentState("selecting");
+            setSelectedMethod(null);
+          }}
+          className="w-full h-10 text-sm"
+        >
+          Elegir otro método de pago
+        </Button>
+      </div>
+    );
+  }
+
   // Estado: Selección de método de pago
   return (
     <div className="space-y-8">
@@ -690,8 +765,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
             <div className="p-4 pt-0 border-t border-border">
               <div className="mt-4 space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Envía un Bizum al número <strong>{BIZUM_PHONE}</strong> con el concepto indicado y
-                  después envía una captura del comprobante por WhatsApp.
+                  Envía un Bizum al número <strong>{BIZUM_PHONE}</strong> con el concepto indicado. Nosotros lo verificaremos.
                 </p>
                 <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
                   <p className="text-xs text-amber-700 dark:text-amber-300">
@@ -719,7 +793,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
               </div>
               <div>
                 <h3 className="font-medium text-foreground">Transferencia Bancaria</h3>
-                <p className="text-xs text-muted-foreground">Transferencia o ingreso en cajero</p>
+                <p className="text-xs text-muted-foreground">Desde tu banco (puede tardar en reflejarse)</p>
               </div>
             </div>
             {expandedMethod === "transfer" ? (
@@ -733,16 +807,58 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
             <div className="p-4 pt-0 border-t border-border">
               <div className="mt-4 space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Realiza una transferencia bancaria o ingreso en cajero y envía el justificante por WhatsApp.
+                  Realiza una transferencia bancaria al IBAN indicado. Avisaremos a nuestro equipo para que lo compruebe.
                 </p>
                 <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
                   <p className="text-xs text-amber-700 dark:text-amber-300">
-                    <strong>Confirmación manual:</strong> Tu reserva se confirmará cuando el propietario verifique el pago.
+                    <strong>Confirmación manual:</strong> Tu reserva se confirmará cuando se reciba el importe.
                   </p>
                 </div>
                 <Button onClick={handleTransferSelect} variant="outline" className="w-full h-12">
                   <Building2 className="mr-2 h-4 w-4" />
                   Pagar por transferencia
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Ingreso en Cajero */}
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <button
+            onClick={() => toggleMethod("cajero")}
+            className="w-full p-4 flex items-center justify-between text-left hover:bg-muted/50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-400">
+                <Building2 className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-medium text-foreground">Ingreso en Cajero</h3>
+                <p className="text-xs text-muted-foreground">Ingreso directo de efectivo</p>
+              </div>
+            </div>
+            {expandedMethod === "cajero" ? (
+              <ChevronUp className="h-5 w-5 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="h-5 w-5 text-muted-foreground" />
+            )}
+          </button>
+
+          {expandedMethod === "cajero" && (
+            <div className="p-4 pt-0 border-t border-border">
+              <div className="mt-4 space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Realiza el ingreso en efectivo directamente en un cajero de nuestra entidad. Se reflejará al instante.
+                </p>
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    <strong>Confirmación manual:</strong> Tu reserva se confirmará cuando el propietario verifique el ingreso.
+                  </p>
+                </div>
+                <Button onClick={handleCajeroSelect} variant="outline" className="w-full h-12">
+                  <Building2 className="mr-2 h-4 w-4" />
+                  Ingresar en cajero
                 </Button>
               </div>
             </div>
