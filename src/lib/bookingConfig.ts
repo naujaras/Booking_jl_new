@@ -5,9 +5,10 @@ import { format } from "date-fns";
 // ============================================
 
 // URLs de Webhooks de n8n (producción)
-export const N8N_WEBHOOK_URL = "https://n8n-n8n.1owldl.easypanel.host/webhook/b4920b99-1724-4169-8630-50b4b795911d";
-export const N8N_PRICES_WEBHOOK_URL = "https://n8n-n8n.1owldl.easypanel.host/webhook/854bd8ed-d900-4b55-a210-a08dac674651";
-export const N8N_BOOKING_WEBHOOK_URL = "https://n8n-n8n.1owldl.easypanel.host/webhook/a34d16d0-2cac-4847-845c-9b0a89f81f0c";
+export const N8N_WEBHOOK_URL = "https://n8n-n8n.npfusf.easypanel.host/webhook/a2e613d7-6690-47de-939d-9c479e95e24c";
+export const N8N_AVAILABILITY_URL = "https://n8n-n8n.npfusf.easypanel.host/webhook/disponibilidad";
+export const N8N_PRICES_WEBHOOK_URL = "https://n8n-n8n.npfusf.easypanel.host/webhook/854bd8ed-d900-4b55-a210-a08dac674651";
+export const N8N_BOOKING_WEBHOOK_URL = "https://n8n-n8n.npfusf.easypanel.host/webhook/a34d16d0-2cac-4847-845c-9b0a89f81f0c";
 
 // Tipos de datos
 export type RoomId = "atico" | "estudio" | "habitacion";
@@ -367,8 +368,8 @@ export async function fetchJornadaPrices(date: Date, roomId: RoomId): Promise<Jo
     };
 
     return {
-      dia: parseExcelPrice(row.jornada_de_dia),
-      noche: parseExcelPrice(row.jornada_de_noche),
+      dia: parseExcelPrice(row.dia ?? row.jornada_de_dia),
+      noche: parseExcelPrice(row.noche ?? row.jornada_de_noche),
       dia_entero_manana: parseExcelPrice(row.dia_entero_manana),
       dia_entero_noche: parseExcelPrice(row.dia_entero_noche),
     };
@@ -384,26 +385,19 @@ export async function checkAvailability(date: Date, roomId: RoomId): Promise<Ava
   const jornadasIds = room?.jornadas.map(j => j.id) || [];
 
   try {
-    const startDateTime = formatDateTimeLocal(date, '00:00');
+    const dateFrom = format(date, 'yyyy-MM-dd');
     const nextDay = new Date(date);
     nextDay.setDate(nextDay.getDate() + 1);
-    const endDateTime = formatDateTimeLocal(nextDay, '23:59');
+    const dateTo = format(nextDay, 'yyyy-MM-dd');
 
-    const n8nRoomName = roomId === 'atico' ? 'Ático' : (roomId === 'estudio' ? 'Estudio' : 'Habitación');
+    const url = new URL(N8N_AVAILABILITY_URL);
+    url.searchParams.append('room', roomId);
+    url.searchParams.append('dateFrom', dateFrom);
+    url.searchParams.append('dateTo', dateTo);
 
-    const response = await fetch(N8N_WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'check_availability',
-        room_id: roomId,
-        room_name: n8nRoomName, // n8n Switch uses this
-        date_start: startDateTime,
-        date_end: endDateTime,
-        date_formatted: date.toLocaleDateString('es-ES', {
-          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-        })
-      }),
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
       signal: AbortSignal.timeout ? AbortSignal.timeout(8000) : undefined
     });
 
@@ -422,12 +416,18 @@ export async function checkAvailability(date: Date, roomId: RoomId): Promise<Ava
     } else if (data && data.busy && Array.isArray(data.busy)) {
       events = data.busy.map((b: any, i: number) => ({
         id: `busy-${i}`,
-        start: { dateTime: b.start },
-        end: { dateTime: b.end }
+        start: { dateTime: b.start || b.date },
+        end: { dateTime: b.end || b.date }
       }));
     } else if (data && typeof data === 'object' && data.start && data.end) {
       // Caso de un solo evento devuelto como objeto
       events = [data];
+    } else if (data && typeof data === 'object' && Array.isArray((data as any)[0]?.busy)) {
+      events = (data as any)[0].busy.map((b: any, i: number) => ({
+        id: `busy-${i}`,
+        start: { dateTime: b.start },
+        end: { dateTime: b.end }
+      }));
     }
 
     const availableJornadas = getAvailableJornadas(events, roomId, date);
