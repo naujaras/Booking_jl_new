@@ -157,35 +157,18 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
     setAttempts(0); // Reset attempts when starting payment
 
     try {
-      const response = await fetch(N8N_STRIPE_WEBHOOK, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: totalPrice,
-          email: userEmail,
-          name: booking.clientData.arrendadorNombre,
-          room: room?.name,
-          date: booking.date ? format(booking.date, "yyyy-MM-dd") : null,
-          jornada: jornada?.name,
-          concept: paymentConcept,
-          insurance: booking.seguroCancelacion // Informar si lleva seguro
-        })
-      });
+      const paymentUrl = booking.paymentUrl;
 
-      const data = await response.json();
-
-      // Esperamos que n8n devuelva una URL de pago
-      const paymentUrl = Array.isArray(data) ? data[0]?.url : data?.url;
-
-      if (paymentUrl) {
+      if (paymentUrl && paymentUrl !== "undefined") {
         setStripeUrl(paymentUrl);
         setPaymentState("waiting");
-        window.open(paymentUrl, '_blank');
+        // Use current window to avoid pop-up blockers, just like standard redirects
+        window.location.href = paymentUrl;
       } else {
-        throw new Error("No se recibió URL de pago");
+        throw new Error("No se recibió URL de pago desde la reserva principal.");
       }
     } catch (error) {
-      setErrorMessage("Error al generar el enlace de pago. Inténtalo de nuevo.");
+      setErrorMessage("Error al cargar el enlace de pago seguro.");
       setPaymentState("error");
     }
   };

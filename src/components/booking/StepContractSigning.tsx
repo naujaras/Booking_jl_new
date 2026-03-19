@@ -21,6 +21,7 @@ interface StepContractSigningProps {
   onBack: () => void;
   onNext: () => void;
   onReset: () => void;
+  onBookingCreated?: (paymentUrl?: string) => void;
 }
 
 type ContractState = "loading" | "ready" | "opened" | "checking" | "signed" | "timeout" | "error";
@@ -34,7 +35,7 @@ interface ContractStatusResponse {
   URL?: string;
 }
 
-export function StepContractSigning({ booking, onBack, onNext, onReset }: StepContractSigningProps) {
+export function StepContractSigning({ booking, onBack, onNext, onReset, onBookingCreated }: StepContractSigningProps) {
   const [contractState, setContractState] = useState<ContractState>("loading");
   const [contractUrl, setContractUrl] = useState<string | null>(null);
   const [contractId, setContractId] = useState<string | null>(null);
@@ -114,6 +115,9 @@ export function StepContractSigning({ booking, onBack, onNext, onReset }: StepCo
           setContractUrl(response.contractUrl);
           setContractId(response.bookingId || `NJ-${Date.now()}`);
           setContractState("ready");
+          if (onBookingCreated && response.paymentUrl) {
+            onBookingCreated(response.paymentUrl);
+          }
         } else {
           setErrorMessage(response.message || "Error al generar el contrato");
           setContractState("error");

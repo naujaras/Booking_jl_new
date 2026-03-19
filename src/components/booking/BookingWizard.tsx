@@ -323,6 +323,9 @@ export function BookingWizard() {
               onBack={() => setCurrentStep(4)}
               onNext={() => setCurrentStep(6)}
               onReset={handleReset}
+              onBookingCreated={(paymentUrl) => {
+                if (paymentUrl) setBooking(prev => ({ ...prev, paymentUrl }));
+              }}
             />
           )}
 
