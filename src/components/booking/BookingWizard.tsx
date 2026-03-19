@@ -201,7 +201,30 @@ export function BookingWizard() {
     setPaymentPendingVerification(false);
   };
 
-  const handlePaymentPendingVerification = () => {
+  const handlePaymentPendingVerification = async () => {
+    // Lanzar un webhook a n8n para avisar a Juan de que revise el banco
+    try {
+      const email = booking.clientData.email.trim() || "gestionchatbotnaujaras@gmail.com";
+      await fetch("https://n8n-n8n.npfusf.easypanel.host/webhook/aviso-pago-manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email,
+          nombre: booking.clientData.arrendadorNombre,
+          estancia: booking.room,
+          fecha: booking.date,
+          jornada: booking.jornada,
+          importe: booking.jornadaPrice && booking.extras
+            ? "Ver Excel" // Simplificado, el calculo real lo hace n8n con el JSON de antes
+            : "Revisar",
+          // Identificador para cruzar los datos
+          id_cliente: booking.clientData.arrendadorDni
+        })
+      });
+    } catch (e) {
+      console.error("Error avisando a n8n del pago manual", e);
+    }
+    
     setPaymentPendingVerification(true);
     setCurrentStep(7);
   };

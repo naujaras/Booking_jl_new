@@ -443,7 +443,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
             Pago con Bizum
           </h2>
           <p className="text-muted-foreground">
-            Realiza el pago y envía el comprobante por WhatsApp
+            Realiza el pago de forma segura por Bizum
           </p>
         </div>
 
@@ -488,26 +488,16 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
 
         <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
           <p className="text-sm text-amber-700 dark:text-amber-300 text-center">
-            <strong>⚠️ Atención:</strong> Tu reserva <strong>NO está confirmada</strong> hasta que Juan valide el pago manualmente. 
-            Es imprescindible enviar el comprobante por WhatsApp ahora mismo.
+            <strong>⚠️ Atención:</strong> Tu reserva quedará en estado pendiente. Avisaremos a nuestro equipo para que confirme la recepción del pago en el banco antes de validarla definitivamente.
           </p>
         </div>
 
         <Button
-          onClick={openWhatsApp}
-          className="w-full h-14 text-lg font-medium bg-green-600 hover:bg-green-700"
-        >
-          <Smartphone className="mr-2 h-5 w-5" />
-          Enviar comprobante por WhatsApp
-        </Button>
-
-        <Button
           onClick={onPendingVerification}
-          variant="outline"
-          className="w-full h-12 border-primary text-primary hover:bg-primary/10"
+          className="w-full h-14 text-lg font-medium bg-primary text-primary-foreground hover:bg-primary/90"
         >
-          <Check className="mr-2 h-4 w-4" />
-          Ya he enviado el comprobante por WhatsApp
+          <Check className="mr-2 h-5 w-5" />
+          Ya he realizado el Bizum
         </Button>
 
         <Button
@@ -533,7 +523,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
             Transferencia Bancaria
           </h2>
           <p className="text-muted-foreground">
-            Realiza la transferencia y envía el comprobante por WhatsApp
+            Realiza la transferencia desde tu entidad bancaria
           </p>
         </div>
 
@@ -578,26 +568,16 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
 
         <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
           <p className="text-sm text-amber-700 dark:text-amber-300 text-center">
-            <strong>Importante:</strong> Envía el justificante de transferencia por WhatsApp
-            para confirmar tu reserva manualmente.
+            <strong>Importante:</strong> Avisaremos a nuestro equipo para que compruebe la recepción de la transferencia. Ten en cuenta que esto puede tardar 1-2 días hábiles en reflejarse.
           </p>
         </div>
 
         <Button
-          onClick={openWhatsApp}
-          className="w-full h-14 text-lg font-medium bg-green-600 hover:bg-green-700"
-        >
-          <Smartphone className="mr-2 h-5 w-5" />
-          Enviar comprobante por WhatsApp
-        </Button>
-
-        <Button
           onClick={onPendingVerification}
-          variant="outline"
-          className="w-full h-12 border-primary text-primary hover:bg-primary/10"
+          className="w-full h-14 text-lg font-medium bg-primary text-primary-foreground hover:bg-primary/90"
         >
-          <Check className="mr-2 h-4 w-4" />
-          Ya he enviado el comprobante por WhatsApp
+          <Check className="mr-2 h-5 w-5" />
+          Ya he realizado la transferencia
         </Button>
 
         <Button
