@@ -151,9 +151,9 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
     }
   };
 
-  const handleCardPayment = async () => {
+  const handleStripePayment = async (method: "card" | "bizum" | "transfer") => {
     setPaymentState("processing");
-    setSelectedMethod("card");
+    setSelectedMethod(method);
     setAttempts(0); // Reset attempts when starting payment
 
     try {
@@ -171,16 +171,6 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
       setErrorMessage("Error al cargar el enlace de pago seguro.");
       setPaymentState("error");
     }
-  };
-
-  const handleBizumSelect = () => {
-    setSelectedMethod("bizum");
-    setPaymentState("waiting");
-  };
-
-  const handleTransferSelect = () => {
-    setSelectedMethod("transfer");
-    setPaymentState("waiting");
   };
 
   const handleCajeroSelect = () => {
@@ -246,8 +236,8 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
     );
   }
 
-  // Estado: Pago completado (Tarjeta)
-  if (paymentState === "completed" && selectedMethod === "card") {
+  // Estado: Pago completado (Stripe)
+  if (paymentState === "completed" && (selectedMethod === "card" || selectedMethod === "bizum" || selectedMethod === "transfer")) {
     return (
       <div className="space-y-8">
         <div className="text-center space-y-2">
@@ -285,8 +275,8 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
     );
   }
 
-  // Estado: Timeout esperando pago (Tarjeta)
-  if (paymentState === "timeout" && selectedMethod === "card") {
+  // Estado: Timeout esperando pago (Stripe)
+  if (paymentState === "timeout" && (selectedMethod === "card" || selectedMethod === "bizum" || selectedMethod === "transfer")) {
     return (
       <div className="space-y-8">
         <div className="text-center space-y-2">
@@ -367,8 +357,8 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
     );
   }
 
-  // Estado: Esperando confirmación (Tarjeta)
-  if (paymentState === "waiting" && selectedMethod === "card") {
+  // Estado: Esperando confirmación (Stripe methods)
+  if (paymentState === "waiting" && (selectedMethod === "card" || selectedMethod === "bizum" || selectedMethod === "transfer")) {
     return (
       <div className="space-y-8">
         <div className="text-center space-y-2">
@@ -415,166 +405,6 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
             setSelectedMethod(null);
           }}
           className="w-full h-12"
-        >
-          Elegir otro método de pago
-        </Button>
-      </div>
-    );
-  }
-
-  // Estado: Esperando confirmación (Bizum)
-  if (paymentState === "waiting" && selectedMethod === "bizum") {
-    return (
-      <div className="space-y-8">
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl font-serif font-semibold text-foreground">
-            Pago con Bizum
-          </h2>
-          <p className="text-muted-foreground">
-            Realiza el pago de forma segura por Bizum
-          </p>
-        </div>
-
-        <div className="bg-card border-2 border-primary rounded-xl p-6 space-y-4">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-1">Importe a pagar</p>
-            <p className="text-3xl font-bold text-primary">{totalPrice}€</p>
-          </div>
-
-          <div className="border-t border-border pt-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Teléfono Bizum:</span>
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-semibold">{BIZUM_PHONE}</span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => copyToClipboard(BIZUM_PHONE.replace(/\s/g, ''), 'phone')}
-                >
-                  {copied === 'phone' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <span className="text-sm text-muted-foreground">Concepto:</span>
-              <div className="flex items-start gap-2">
-                <p className="text-sm font-medium bg-muted p-2 rounded flex-1">{paymentConcept}</p>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 flex-shrink-0"
-                  onClick={() => copyToClipboard(paymentConcept, 'concept')}
-                >
-                  {copied === 'concept' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-          <p className="text-sm text-amber-700 dark:text-amber-300 text-center">
-            <strong>⚠️ Atención:</strong> Tu reserva quedará en estado pendiente. Avisaremos a nuestro equipo para que confirme la recepción del pago en el banco antes de validarla definitivamente.
-          </p>
-        </div>
-
-        <Button
-          onClick={onPendingVerification}
-          className="w-full h-14 text-lg font-medium bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          <Check className="mr-2 h-5 w-5" />
-          Ya he realizado el Bizum
-        </Button>
-
-        <Button
-          variant="ghost"
-          onClick={() => {
-            setPaymentState("selecting");
-            setSelectedMethod(null);
-          }}
-          className="w-full h-10 text-sm"
-        >
-          Elegir otro método de pago
-        </Button>
-      </div>
-    );
-  }
-
-  // Estado: Esperando confirmación (Transferencia)
-  if (paymentState === "waiting" && selectedMethod === "transfer") {
-    return (
-      <div className="space-y-8">
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl font-serif font-semibold text-foreground">
-            Transferencia Bancaria
-          </h2>
-          <p className="text-muted-foreground">
-            Realiza la transferencia desde tu entidad bancaria
-          </p>
-        </div>
-
-        <div className="bg-card border-2 border-primary rounded-xl p-6 space-y-4">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-1">Importe a pagar</p>
-            <p className="text-3xl font-bold text-primary">{totalPrice}€</p>
-          </div>
-
-          <div className="border-t border-border pt-4 space-y-3">
-            <div className="space-y-2">
-              <span className="text-sm text-muted-foreground">IBAN:</span>
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-semibold text-sm bg-muted p-2 rounded flex-1">{IBAN}</span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 flex-shrink-0"
-                  onClick={() => copyToClipboard(IBAN.replace(/\s/g, ''), 'iban')}
-                >
-                  {copied === 'iban' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <span className="text-sm text-muted-foreground">Concepto:</span>
-              <div className="flex items-start gap-2">
-                <p className="text-sm font-medium bg-muted p-2 rounded flex-1">{paymentConcept}</p>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 flex-shrink-0"
-                  onClick={() => copyToClipboard(paymentConcept, 'concept')}
-                >
-                  {copied === 'concept' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-          <p className="text-sm text-amber-700 dark:text-amber-300 text-center">
-            <strong>Importante:</strong> Avisaremos a nuestro equipo para que compruebe la recepción de la transferencia. Ten en cuenta que esto puede tardar 1-2 días hábiles en reflejarse.
-          </p>
-        </div>
-
-        <Button
-          onClick={onPendingVerification}
-          className="w-full h-14 text-lg font-medium bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          <Check className="mr-2 h-5 w-5" />
-          Ya he realizado la transferencia
-        </Button>
-
-        <Button
-          variant="ghost"
-          onClick={() => {
-            setPaymentState("selecting");
-            setSelectedMethod(null);
-          }}
-          className="w-full h-10 text-sm"
         >
           Elegir otro método de pago
         </Button>
@@ -713,7 +543,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
                     <strong>Confirmación inmediata:</strong> Tu reserva quedará confirmada al instante.
                   </p>
                 </div>
-                <Button onClick={handleCardPayment} className="w-full h-12">
+                <Button onClick={() => handleStripePayment("card")} className="w-full h-12">
                   <CreditCard className="mr-2 h-4 w-4" />
                   Pagar {totalPrice}€ con tarjeta
                 </Button>
@@ -734,7 +564,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
               </div>
               <div>
                 <h3 className="font-medium text-foreground">Bizum</h3>
-                <p className="text-xs text-muted-foreground">Pago desde tu móvil</p>
+                <p className="text-xs text-muted-foreground">Pago por Stripe con tu móvil</p>
               </div>
             </div>
             {expandedMethod === "bizum" ? (
@@ -748,14 +578,14 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
             <div className="p-4 pt-0 border-t border-border">
               <div className="mt-4 space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Envía un Bizum al número <strong>{BIZUM_PHONE}</strong> con el concepto indicado. Nosotros lo verificaremos.
+                  Pago seguro a través de la pasarela oficial de Stripe. Selecciona Bizum tras redireccionarte para completar tu reserva.
                 </p>
-                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                  <p className="text-xs text-amber-700 dark:text-amber-300">
-                    <strong>Confirmación manual:</strong> Tu reserva se confirmará cuando el propietario verifique el pago.
+                <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                  <p className="text-xs text-green-700 dark:text-green-300">
+                    <strong>Confirmación automática:</strong> Tu reserva quedará confirmada al instante tras procesar el Bizum en Stripe.
                   </p>
                 </div>
-                <Button onClick={handleBizumSelect} variant="outline" className="w-full h-12">
+                <Button onClick={() => handleStripePayment("bizum")} variant="outline" className="w-full h-12">
                   <Smartphone className="mr-2 h-4 w-4" />
                   Pagar con Bizum
                 </Button>
@@ -775,8 +605,8 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
                 <Building2 className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-medium text-foreground">Transferencia Bancaria</h3>
-                <p className="text-xs text-muted-foreground">Desde tu banco (puede tardar en reflejarse)</p>
+                <h3 className="font-medium text-foreground">Transferencia vía Stripe</h3>
+                <p className="text-xs text-muted-foreground">Automática y segura vía Open Banking</p>
               </div>
             </div>
             {expandedMethod === "transfer" ? (
@@ -790,16 +620,16 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
             <div className="p-4 pt-0 border-t border-border">
               <div className="mt-4 space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Realiza una transferencia bancaria al IBAN indicado. Avisaremos a nuestro equipo para que lo compruebe.
+                  Realiza una transferencia segura directamente procesada por Stripe mediante validación Open Banking. 
                 </p>
-                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                  <p className="text-xs text-amber-700 dark:text-amber-300">
-                    <strong>Confirmación manual:</strong> Tu reserva se confirmará cuando se reciba el importe.
+                <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                  <p className="text-xs text-green-700 dark:text-green-300">
+                    <strong>Trazabilidad:</strong> Al usar la pasarela oficial, la validación se hace a través de Stripe y protege tu reserva automáticamente en cuanto se emite la transferencia.
                   </p>
                 </div>
-                <Button onClick={handleTransferSelect} variant="outline" className="w-full h-12">
+                <Button onClick={() => handleStripePayment("transfer")} variant="outline" className="w-full h-12">
                   <Building2 className="mr-2 h-4 w-4" />
-                  Pagar por transferencia
+                  Pagar por Transferencia (Stripe)
                 </Button>
               </div>
             </div>

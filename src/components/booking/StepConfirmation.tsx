@@ -24,7 +24,7 @@ interface StepConfirmationProps {
   onBack: () => void;
   onNext: () => void;
   onCommentsChange: (comments: string) => void;
-  onCommentFieldsChange: (fields: { generales: string; horaLlegada: string; pagoManual: string }) => void;
+  onCommentFieldsChange: (fields: { generales: string; horaLlegada: string }) => void;
   onSeguroChange: (seguro: boolean) => void;
 }
 
@@ -95,7 +95,7 @@ export function StepConfirmation({
   const totalPrice = calculateTotalPrice(booking);
   const insurancePrice = calculateInsurancePrice(booking);
 
-  const fields = booking.commentFields || { generales: "", horaLlegada: "", pagoManual: "" };
+  const fields = booking.commentFields || { generales: "", horaLlegada: "" };
 
   const handleFieldChange = (key: keyof typeof fields, value: string) => {
     onCommentFieldsChange({ ...fields, [key]: value });
@@ -384,19 +384,8 @@ export function StepConfirmation({
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="obs-pago">Datos del pago manual (si aplica: Bizum, Transferencia...)</Label>
-          <Textarea
-            id="obs-pago"
-            placeholder="Indica aquí si has realizado un pago manual o tienes dudas..."
-            value={fields.pagoManual}
-            onChange={(e) => handleFieldChange("pagoManual", e.target.value)}
-            className="h-20"
-          />
-        </div>
-        
         <p className="text-xs text-muted-foreground">
-          Esta información ayuda a Juan a gestionar mejor tu llegada y validación del pago.
+          Esta información ayuda a Náujaras a gestionar mejor tu llegada.
         </p>
       </div>
 

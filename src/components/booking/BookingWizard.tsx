@@ -56,8 +56,7 @@ const initialBookingData: BookingData = {
   clientData: initialClientData,
   commentFields: {
     generales: "",
-    horaLlegada: "",
-    pagoManual: ""
+    horaLlegada: ""
   }
 };
 
@@ -183,7 +182,7 @@ export function BookingWizard() {
     setBooking({ ...booking, clientData });
   };
 
-  const handleCommentFieldsChange = (fields: { generales: string; horaLlegada: string; pagoManual: string }) => {
+  const handleCommentFieldsChange = (fields: { generales: string; horaLlegada: string }) => {
     setBooking({ ...booking, commentFields: fields });
   };
 
