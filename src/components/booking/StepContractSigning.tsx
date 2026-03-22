@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Loader2, FileSignature, ExternalLink, XCircle, Clock, AlertTriangle, CheckCircle2, Download, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -105,8 +105,13 @@ export function StepContractSigning({ booking, onBack, onNext, onReset, onBookin
     }
   }, [userEmail]);
 
+  const requestSentRef = useRef(false);
+
   // Llamar al webhook de creación cuando se monta el componente
   useEffect(() => {
+    if (requestSentRef.current) return;
+    requestSentRef.current = true;
+
     const generateContract = async () => {
       try {
         const response = await createBooking(booking);
