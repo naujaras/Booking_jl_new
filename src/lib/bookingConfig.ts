@@ -544,6 +544,8 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
     
     if (Array.isArray(data) && data[0]?.submitters?.[0]?.embed_src) {
       contractUrl = data[0].submitters[0].embed_src;
+    } else if (data && data.docuseal_url) {
+      contractUrl = data.docuseal_url;
     } else if (data && data.contractUrl) {
       contractUrl = data.contractUrl;
     } else {
@@ -566,7 +568,7 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
       contractUrl = `https://docuseal.eu/d/NfUmr9QnzPYYsd?email=${emailEncoded}&nombre_arrendador=${nombre}&dni=${dni}&nombre_acompanante=${nombreAcomp}&dni_acompanante=${dniAcomp}&Servicios_contratados=${servicios}&N%C3%BAmero_de_personas_incluidas_en_la_reserva=${numPersonas}&fecha_entrada=${encodeURIComponent(fechaEntrada.split(" ")[0])}&hora_entrada=${encodeURIComponent(jornada?.timeSlot.start || '')}&fecha_salida=${encodeURIComponent(fechaSalida.split(" ")[0])}&hora_salida=${encodeURIComponent(jornada?.timeSlot.end || '')}&dia=${dia}&mes=${mes}&ano=${anio}`;
     }
 
-    const paymentUrl = Array.isArray(data) ? (data[0]?.paymentUrl || data[0]?.url) : (data?.paymentUrl || data?.url);
+    const paymentUrl = Array.isArray(data) ? (data[0]?.paymentUrl || data[0]?.stripe_url || data[0]?.url) : (data?.paymentUrl || data?.stripe_url || data?.url);
 
     return {
       success: true,
