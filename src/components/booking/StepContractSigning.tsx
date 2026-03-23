@@ -78,10 +78,10 @@ export function StepContractSigning({ booking, onBack, onNext, onReset, onBookin
         
         // Redirigir inmediatamente a Stripe
         const redirectTo = data.paymentUrl || booking.paymentUrl;
-        if (redirectTo && redirectTo !== "undefined") {
+        if (redirectTo && redirectTo !== "undefined" && redirectTo.startsWith("http")) {
           window.location.href = redirectTo;
         } else {
-          setErrorMessage("Contrato firmado pero no se encontró la URL de pago seguro de Stripe.");
+          setErrorMessage("URL de pago seguro inválida enviada desde n8n: " + String(redirectTo));
           setContractState("error");
         }
         return true;
@@ -93,8 +93,11 @@ export function StepContractSigning({ booking, onBack, onNext, onReset, onBookin
         setContractState("signed");
 
         const redirectTo = data.paymentUrl || booking.paymentUrl;
-        if (redirectTo && redirectTo !== "undefined") {
+        if (redirectTo && redirectTo !== "undefined" && redirectTo.startsWith("http")) {
           window.location.href = redirectTo;
+        } else {
+          setErrorMessage("URL de pago seguro inválida enviada desde n8n: " + String(redirectTo));
+          setContractState("error");
         }
         return true;
       }
@@ -180,6 +183,12 @@ export function StepContractSigning({ booking, onBack, onNext, onReset, onBookin
 
   const confirmOpenContract = () => {
     if (contractUrl) {
+      if (!contractUrl.startsWith("http")) {
+        setErrorMessage("n8n ha enviado un enlace corrupto o vacío y no se puede abrir: " + contractUrl);
+        setContractState("error");
+        setShowOpenDialog(false);
+        return;
+      }
       window.open(contractUrl, '_blank');
       setContractState("opened");
       setAttempts(0); // Reset attempts when opening contract
@@ -195,7 +204,7 @@ export function StepContractSigning({ booking, onBack, onNext, onReset, onBookin
       setIsManualChecking(false);
       
       // Intentar redirigir si hay url en booking
-      if (booking.paymentUrl && booking.paymentUrl !== "undefined") {
+      if (booking.paymentUrl && booking.paymentUrl !== "undefined" && booking.paymentUrl.startsWith("http")) {
         window.location.href = booking.paymentUrl;
       }
     }, 1500); // Simulamos una pequeña carga
@@ -308,10 +317,11 @@ export function StepContractSigning({ booking, onBack, onNext, onReset, onBookin
         <Button
           onClick={() => {
              const redirectTo = booking.paymentUrl;
-             if (redirectTo && redirectTo !== "undefined") {
+             if (redirectTo && redirectTo !== "undefined" && redirectTo.startsWith("http")) {
                window.location.href = redirectTo;
              } else {
-               onNext();
+               setErrorMessage("No hay un enlace de pago válido. Valor: " + String(redirectTo));
+               setContractState("error");
              }
           }}
           className="w-full h-14 text-lg font-medium"
