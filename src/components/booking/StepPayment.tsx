@@ -162,8 +162,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
       if (paymentUrl && paymentUrl !== "undefined") {
         setStripeUrl(paymentUrl);
         setPaymentState("waiting");
-        // Use current window to avoid pop-up blockers, just like standard redirects
-        window.location.href = paymentUrl;
+        window.open(paymentUrl, '_blank');
       } else {
         throw new Error("No se recibió URL de pago desde la reserva principal.");
       }
