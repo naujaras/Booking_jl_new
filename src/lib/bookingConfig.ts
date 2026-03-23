@@ -542,13 +542,17 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
     const data = await response.json();
     let contractUrl: string | undefined;
     
-    if (Array.isArray(data) && data[0]?.submitters?.[0]?.embed_src) {
-      contractUrl = data[0].submitters[0].embed_src;
-    } else if (data && data.docuseal_url) {
-      contractUrl = data.docuseal_url;
-    } else if (data && data.contractUrl) {
-      contractUrl = data.contractUrl;
+    if (Array.isArray(data)) {
+      if (data[0]?.submitters?.[0]?.embed_src) contractUrl = data[0].submitters[0].embed_src;
+      else if (data[0]?.docuseal_url) contractUrl = data[0].docuseal_url;
+      else if (data[0]?.contractUrl) contractUrl = data[0].contractUrl;
     } else {
+      if (data?.submitters?.[0]?.embed_src) contractUrl = data.submitters[0].embed_src;
+      else if (data?.docuseal_url) contractUrl = data.docuseal_url;
+      else if (data?.contractUrl) contractUrl = data.contractUrl;
+    }
+
+    if (!contractUrl) {
       console.warn("Generando enlace DocuSeal localmente.");
       const emailEncoded = encodeURIComponent(email);
       const nombre = encodeURIComponent(booking.clientData.arrendadorNombre);
