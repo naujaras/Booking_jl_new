@@ -11,8 +11,6 @@ import {
   getEffectiveEmail
 } from "@/lib/bookingConfig";
 
-const N8N_FINAL_CONFIRMATION_WEBHOOK = "https://n8n-n8n.npfusf.easypanel.host/webhook/f4fe011f-919b-46bf-b5a0-18df06a8573b";
-const N8N_PENDING_VALIDATION_WEBHOOK = "https://n8n-n8n.npfusf.easypanel.host/webhook/6e8a005b-9396-4adc-9770-4e41cb8b47c2";
 const N8N_BOOKING_REGISTRO_WEBHOOK = "https://n8n-n8n.npfusf.easypanel.host/webhook/c1000a02-ce51-4e58-8ce9-e9db283b9d1a";
 
 // Función auxiliar para formatear fecha y hora en ISO 8601 con timezone España
@@ -104,32 +102,8 @@ export function StepFinalConfirmation({ booking, onReset, pendingVerification = 
       };
 
       try {
-        // Siempre llamar al webhook de confirmación final
-        const response = await fetch(N8N_FINAL_CONFIRMATION_WEBHOOK, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(bookingData),
-        });
-
-        // Si es pago pendiente de verificación (Bizum/Transferencia), también llamar al webhook de validación pendiente
-        if (pendingVerification) {
-          await fetch(N8N_PENDING_VALIDATION_WEBHOOK, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              ...bookingData,
-              estado: "pendiente_validar",
-              metodoPago: "bizum_transferencia",
-            }),
-          });
-        }
-
-        // Siempre llamar al webhook de registro de reserva con método de pago y estado
-        await fetch(N8N_BOOKING_REGISTRO_WEBHOOK, {
+        // Único webhook que necesitamos ahora, consolidado.
+        const response = await fetch(N8N_BOOKING_REGISTRO_WEBHOOK, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
