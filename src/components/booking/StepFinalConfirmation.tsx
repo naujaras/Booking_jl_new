@@ -11,9 +11,9 @@ import {
   getEffectiveEmail
 } from "@/lib/bookingConfig";
 
-const N8N_FINAL_CONFIRMATION_WEBHOOK = "https://n8n-n8n.1owldl.easypanel.host/webhook/f4fe011f-919b-46bf-b5a0-18df06a8573b";
-const N8N_PENDING_VALIDATION_WEBHOOK = "https://n8n-n8n.1owldl.easypanel.host/webhook/6e8a005b-9396-4adc-9770-4e41cb8b47c2";
-const N8N_BOOKING_REGISTRO_WEBHOOK = "https://n8n-n8n.1owldl.easypanel.host/webhook/c1000a02-ce51-4e58-8ce9-e9db283b9d1a";
+const N8N_FINAL_CONFIRMATION_WEBHOOK = "https://n8n-n8n.npfusf.easypanel.host/webhook/f4fe011f-919b-46bf-b5a0-18df06a8573b";
+const N8N_PENDING_VALIDATION_WEBHOOK = "https://n8n-n8n.npfusf.easypanel.host/webhook/6e8a005b-9396-4adc-9770-4e41cb8b47c2";
+const N8N_BOOKING_REGISTRO_WEBHOOK = "https://n8n-n8n.npfusf.easypanel.host/webhook/c1000a02-ce51-4e58-8ce9-e9db283b9d1a";
 
 // Función auxiliar para formatear fecha y hora en ISO 8601 con timezone España
 function formatDateTimeISO(date: Date, time: string): string {
@@ -235,6 +235,14 @@ export function StepFinalConfirmation({ booking, onReset, pendingVerification = 
           </div>
         </div>
 
+        {/* Fianza en Efectivo */}
+        <div className="bg-blue-50 dark:bg-blue-950/30 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-start gap-3 shadow-sm">
+          <AlertTriangle className="h-6 w-6 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+          <p className="text-base text-blue-800 dark:text-blue-300 font-medium">
+            ¡Importante! <strong>Recuerda llevar los 50 euros de fianza en efectivo</strong> el día de tu reserva.
+          </p>
+        </div>
+
         {/* Mensaje final */}
         <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl p-4">
           <p className="text-sm text-green-700 dark:text-green-300 text-center">
@@ -399,6 +407,14 @@ export function StepFinalConfirmation({ booking, onReset, pendingVerification = 
             <span className="text-xl font-bold text-green-800 dark:text-green-400">{totalPrice}€</span>
           </div>
         </div>
+      </div>
+
+      {/* Fianza en Efectivo */}
+      <div className="bg-blue-50 dark:bg-blue-950/30 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-5 flex items-start gap-4 shadow-sm">
+        <AlertTriangle className="h-7 w-7 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+        <p className="text-lg text-blue-800 dark:text-blue-300 font-medium leading-relaxed">
+          ¡Importante! <strong>Recuerda llevar los 50 euros de fianza en efectivo</strong> el día de tu reserva.
+        </p>
       </div>
 
       {/* Mensaje final */}

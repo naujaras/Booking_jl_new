@@ -223,6 +223,16 @@ export function StepConfirmation({
             <span className="text-3xl font-bold">{totalPrice}€</span>
           </div>
         </div>
+
+        {/* Fianza en Efectivo Recordatorio Temprano */}
+        <div className="bg-blue-50 dark:bg-blue-950/30 p-4 border-t border-blue-200 dark:border-blue-800">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-blue-800 dark:text-blue-300">
+              <strong>Fianza Obligatoria:</strong> Recuerda que el día de tu reserva deberás entregar <strong className="text-base">50€ en efectivo</strong> que te serán devueltos a la salida (no se admite tarjeta ni Bizum para esto).
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Seguro de Cancelación - Flujo simplificado para usuarios "cazurritos" */}
