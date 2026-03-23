@@ -64,6 +64,7 @@ export interface BookingData {
   commentFields?: {
     generales: string;
     horaLlegada: string;
+    pagoManual?: string;
   };
   extras: {
     decoracion: DecorationType | null;
