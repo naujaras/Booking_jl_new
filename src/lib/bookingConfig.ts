@@ -588,7 +588,7 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
 }
 
 // Email por defecto cuando el usuario no facilita uno
-export const DEFAULT_CONTACT_EMAIL = "gestionchatbotnaujaras@gmail.com";
+export const DEFAULT_CONTACT_EMAIL = "naujaras@proton.me";
 
 export function getEffectiveEmail(email: string): string {
   return email.trim() || DEFAULT_CONTACT_EMAIL;
