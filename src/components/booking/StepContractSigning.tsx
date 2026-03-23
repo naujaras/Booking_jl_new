@@ -461,17 +461,39 @@ export function StepContractSigning({ booking, onBack, onNext, onReset, onBookin
         </div>
       </div>
 
-      {/* Botón continuar deshabilitado */}
-      <div className="space-y-2">
-        <Button
-          disabled
-          className="w-full h-14 text-lg font-medium opacity-50 cursor-not-allowed"
-        >
-          Continuar al pago
-        </Button>
-        <p className="text-xs text-center text-muted-foreground">
-          Debes firmar el contrato antes de continuar
-        </p>
+      {/* Sección de verificación/continuación */}
+      <div className="space-y-3">
+        {contractState === "opened" ? (
+          <Button
+            onClick={handleManualCheck}
+            disabled={isManualChecking}
+            className="w-full h-14 text-lg font-medium bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            {isManualChecking ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Verificando...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-5 w-5" />
+                Ya he firmado el contrato
+              </>
+            )}
+          </Button>
+        ) : (
+          <div className="space-y-2">
+            <Button
+              disabled
+              className="w-full h-14 text-lg font-medium opacity-50 cursor-not-allowed"
+            >
+              Continuar al pago
+            </Button>
+            <p className="text-xs text-center text-muted-foreground">
+              Debes abrir y firmar el contrato antes de continuar
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Dialog de confirmación */}
