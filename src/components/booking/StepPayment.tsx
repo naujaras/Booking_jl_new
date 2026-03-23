@@ -17,7 +17,8 @@ const N8N_STRIPE_WEBHOOK = "https://n8n-n8n.1owldl.easypanel.host/webhook/6712f3
 const N8N_PAYMENT_STATUS_WEBHOOK = "https://n8n-n8n.1owldl.easypanel.host/webhook/6218e434-d177-4bf9-8699-f03bddaa7983";
 const BIZUM_PHONE = "679 96 82 09";
 const WHATSAPP_PHONE = "34677222166";
-const IBAN = "ES00 0000 0000 0000 0000 0000"; // ← TODO: REEMPLAZAR CON TU IBAN REAL PARA TRANSFERENCIAS
+const IBAN = "ES59 0182 6795 3702 0165 5693";
+const TITULAR_CUENTA = "PORTIALDI SOCIEDAD LTDA.";
 const POLLING_INTERVAL = 60000; // 1 minuto
 const MAX_ATTEMPTS = 10; // 10 intentos = 10 minutos
 
@@ -434,7 +435,12 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
 
           <div className="border-t border-border pt-4 space-y-3">
             <div className="space-y-2">
-              <span className="text-sm text-muted-foreground">IBAN / Cuenta:</span>
+              <span className="text-sm text-muted-foreground">Titular de la cuenta:</span>
+              <p className="font-medium text-sm text-foreground">{TITULAR_CUENTA}</p>
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-sm text-muted-foreground">IBAN / Cuenta (BBVA):</span>
               <div className="flex items-center gap-2">
                 <span className="font-mono font-semibold text-sm bg-muted p-2 rounded flex-1">{IBAN}</span>
                 <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => copyToClipboard(IBAN.replace(/\s/g, ''), 'iban')}>
@@ -613,8 +619,8 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
                 <Building2 className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-medium text-foreground">Transferencia vía Stripe</h3>
-                <p className="text-xs text-muted-foreground">Automática y segura vía Open Banking</p>
+                <h3 className="font-medium text-foreground">Transferencia Bancaria</h3>
+                <p className="text-xs text-muted-foreground">Pago manual a través de tu banco</p>
               </div>
             </div>
             {expandedMethod === "transfer" ? (
