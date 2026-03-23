@@ -30,9 +30,12 @@ interface ContractStatusResponse {
   // Formato n8n
   Arrendador?: string;
   pdf?: string;
-  // Formato alternativo
+  // Formato alternativo / Antiguo
   Status?: string;
   URL?: string;
+  // Nuevo formato
+  estado?: string;
+  paymentUrl?: string;
 }
 
 export function StepContractSigning({ booking, onBack, onNext, onReset, onBookingCreated }: StepContractSigningProps) {
@@ -68,23 +71,35 @@ export function StepContractSigning({ booking, onBack, onNext, onReset, onBookin
         ? rawData[rawData.length - 1]
         : rawData;
 
-      // Verificar si hay datos de contrato firmado
-      // n8n devuelve { Arrendador: email, pdf: url } si está firmado
-      // O puede devolver array vacío [] si no está firmado
-      if (data && data.pdf) {
-        setSignedPdfUrl(data.pdf);
+      // NUEVO FORMATO n8n
+      if (data && data.estado === "Firmado") {
         setContractState("signed");
+        // Detiene el polling porque return true detiene el ciclo de llamadas si isManual es falso (o por el estado)
+        
+        // Redirigir inmediatamente a Stripe
+        const redirectTo = data.paymentUrl || booking.paymentUrl;
+        if (redirectTo && redirectTo !== "undefined") {
+          window.location.href = redirectTo;
+        } else {
+          setErrorMessage("Contrato firmado pero no se encontró la URL de pago seguro de Stripe.");
+          setContractState("error");
+        }
         return true;
       }
 
-      // Formato alternativo: { Status: "completed", URL: "..." }
-      if (data && data.Status === "completed" && data.URL) {
-        setSignedPdfUrl(data.URL);
+      // Verificar si hay datos de contrato firmado (FORMATOS ANTIGUOS)
+      if (data && (data.pdf || (data.Status === "completed" && data.URL))) {
+        setSignedPdfUrl(data.pdf || data.URL || "");
         setContractState("signed");
+
+        const redirectTo = data.paymentUrl || booking.paymentUrl;
+        if (redirectTo && redirectTo !== "undefined") {
+          window.location.href = redirectTo;
+        }
         return true;
       }
 
-      // No firmado aún
+      // No firmado aún (estado === "Pendiente de firma" o similares)
       if (!isManual) {
         setAttempts(prev => {
           const newAttempts = prev + 1;
@@ -103,7 +118,7 @@ export function StepContractSigning({ booking, onBack, onNext, onReset, onBookin
         setIsManualChecking(false);
       }
     }
-  }, [userEmail]);
+  }, [userEmail, booking.paymentUrl]);
 
   const requestSentRef = useRef(false);
 
@@ -174,11 +189,15 @@ export function StepContractSigning({ booking, onBack, onNext, onReset, onBookin
 
   const handleManualCheck = async () => {
     setIsManualChecking(true);
-    // Ya no comprobamos en n8n si ha firmado cuando le da al botón porque docuseal le cambia el email al enviarlo 
-    // y falla la comprobación. Damos pase VIP y confiamos en el usuario.
+    // Damos pase VIP y confiamos en el usuario.
     setTimeout(() => {
       setContractState("signed");
       setIsManualChecking(false);
+      
+      // Intentar redirigir si hay url en booking
+      if (booking.paymentUrl && booking.paymentUrl !== "undefined") {
+        window.location.href = booking.paymentUrl;
+      }
     }, 1500); // Simulamos una pequeña carga
   };
 
@@ -242,10 +261,10 @@ export function StepContractSigning({ booking, onBack, onNext, onReset, onBookin
       <div className="space-y-8">
         <div className="text-center space-y-2">
           <h2 className="text-2xl font-serif font-semibold text-foreground">
-            Firma del Contrato
+            Redirigiendo a Stripe...
           </h2>
           <p className="text-muted-foreground">
-            El contrato ha sido firmado correctamente
+            El contrato ha sido firmado correctamente. Se te enviará al sistema de pago seguro en unos instantes.
           </p>
         </div>
 
@@ -285,12 +304,20 @@ export function StepContractSigning({ booking, onBack, onNext, onReset, onBookin
           </div>
         </div>
 
-        {/* Botón continuar habilitado */}
+        {/* Botón continuar deshabilitado temporalmente ya que nos vamos a redirigir solos */}
         <Button
-          onClick={onNext}
+          onClick={() => {
+             const redirectTo = booking.paymentUrl;
+             if (redirectTo && redirectTo !== "undefined") {
+               window.location.href = redirectTo;
+             } else {
+               onNext();
+             }
+          }}
           className="w-full h-14 text-lg font-medium"
         >
-          Continuar al pago
+          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+          Redirigiendo al pago...
         </Button>
       </div>
     );
