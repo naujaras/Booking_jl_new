@@ -36,6 +36,9 @@ interface ContractStatusResponse {
   // Nuevo formato
   estado?: string;
   paymentUrl?: string;
+  // Fallbacks de seguridad
+  Estado?: string;
+  status?: string;
 }
 
 export function StepContractSigning({ booking, onBack, onNext, onReset, onBookingCreated }: StepContractSigningProps) {
@@ -71,34 +74,25 @@ export function StepContractSigning({ booking, onBack, onNext, onReset, onBookin
         ? rawData[rawData.length - 1]
         : rawData;
 
-      // NUEVO FORMATO n8n
-      if (data && data.estado === "Firmado") {
+      // NUEVO FORMATO n8n (o directo desde Excel)
+      // Buscamos la columna de diferentes formas por si acaso (Estado, estado, Status...)
+      const estadoActual = String(data?.estado || data?.Estado || data?.status || data?.Status || "").trim().toLowerCase();
+
+      if (estadoActual === "firmado") {
         setContractState("signed");
-        // Detiene el polling porque return true detiene el ciclo de llamadas si isManual es falso (o por el estado)
         
-        // Redirigir inmediatamente a Stripe
-        const redirectTo = data.paymentUrl || booking.paymentUrl;
-        if (redirectTo && redirectTo !== "undefined" && redirectTo.startsWith("http")) {
-          window.location.href = redirectTo;
-        } else {
-          setErrorMessage("URL de pago seguro inválida enviada desde n8n: " + String(redirectTo));
-          setContractState("error");
+        // Guardamos la url de pago por si venía actualizada
+        if (data.paymentUrl && data.paymentUrl.startsWith("http")) {
+          // El padre maneja esta URL, ya no redirigimos a la fuerza
+          // si tu web está configurada para pasar el valor.
         }
         return true;
       }
 
       // Verificar si hay datos de contrato firmado (FORMATOS ANTIGUOS)
-      if (data && (data.pdf || (data.Status === "completed" && data.URL))) {
+      if (data && (data.pdf || (String(data.Status).trim().toLowerCase() === "completed" && data.URL))) {
         setSignedPdfUrl(data.pdf || data.URL || "");
         setContractState("signed");
-
-        const redirectTo = data.paymentUrl || booking.paymentUrl;
-        if (redirectTo && redirectTo !== "undefined" && redirectTo.startsWith("http")) {
-          window.location.href = redirectTo;
-        } else {
-          setErrorMessage("URL de pago seguro inválida enviada desde n8n: " + String(redirectTo));
-          setContractState("error");
-        }
         return true;
       }
 
@@ -202,11 +196,6 @@ export function StepContractSigning({ booking, onBack, onNext, onReset, onBookin
     setTimeout(() => {
       setContractState("signed");
       setIsManualChecking(false);
-      
-      // Intentar redirigir si hay url en booking
-      if (booking.paymentUrl && booking.paymentUrl !== "undefined" && booking.paymentUrl.startsWith("http")) {
-        window.location.href = booking.paymentUrl;
-      }
     }, 1500); // Simulamos una pequeña carga
   };
 
@@ -270,10 +259,10 @@ export function StepContractSigning({ booking, onBack, onNext, onReset, onBookin
       <div className="space-y-8">
         <div className="text-center space-y-2">
           <h2 className="text-2xl font-serif font-semibold text-foreground">
-            Redirigiendo a Stripe...
+            Firma del Contrato
           </h2>
           <p className="text-muted-foreground">
-            El contrato ha sido firmado correctamente. Se te enviará al sistema de pago seguro en unos instantes.
+            El contrato ha sido firmado correctamente. Ya puedes continuar al pago.
           </p>
         </div>
 
@@ -313,21 +302,12 @@ export function StepContractSigning({ booking, onBack, onNext, onReset, onBookin
           </div>
         </div>
 
-        {/* Botón continuar deshabilitado temporalmente ya que nos vamos a redirigir solos */}
+        {/* Botón continuar habilitado */}
         <Button
-          onClick={() => {
-             const redirectTo = booking.paymentUrl;
-             if (redirectTo && redirectTo !== "undefined" && redirectTo.startsWith("http")) {
-               window.location.href = redirectTo;
-             } else {
-               setErrorMessage("No hay un enlace de pago válido. Valor: " + String(redirectTo));
-               setContractState("error");
-             }
-          }}
+          onClick={onNext}
           className="w-full h-14 text-lg font-medium"
         >
-          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-          Redirigiendo al pago...
+          Continuar al pago
         </Button>
       </div>
     );
