@@ -151,7 +151,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
     }
   };
 
-  const handleStripePayment = async (method: "card" | "bizum" | "transfer") => {
+  const handleStripePayment = async (method: "card" | "bizum") => {
     setPaymentState("processing");
     setSelectedMethod(method);
     setAttempts(0); // Reset attempts when starting payment
@@ -172,8 +172,8 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
     }
   };
 
-  const handleCajeroSelect = () => {
-    setSelectedMethod("cajero");
+  const handleManualMethodSelect = (method: "cajero" | "transfer") => {
+    setSelectedMethod(method);
     setPaymentState("waiting");
   };
 
@@ -236,7 +236,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
   }
 
   // Estado: Pago completado (Stripe)
-  if (paymentState === "completed" && (selectedMethod === "card" || selectedMethod === "bizum" || selectedMethod === "transfer")) {
+  if (paymentState === "completed" && (selectedMethod === "card" || selectedMethod === "bizum")) {
     return (
       <div className="space-y-8">
         <div className="text-center space-y-2">
@@ -275,7 +275,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
   }
 
   // Estado: Timeout esperando pago (Stripe)
-  if (paymentState === "timeout" && (selectedMethod === "card" || selectedMethod === "bizum" || selectedMethod === "transfer")) {
+  if (paymentState === "timeout" && (selectedMethod === "card" || selectedMethod === "bizum")) {
     return (
       <div className="space-y-8">
         <div className="text-center space-y-2">
@@ -357,7 +357,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
   }
 
   // Estado: Esperando confirmación (Stripe methods)
-  if (paymentState === "waiting" && (selectedMethod === "card" || selectedMethod === "bizum" || selectedMethod === "transfer")) {
+  if (paymentState === "waiting" && (selectedMethod === "card" || selectedMethod === "bizum")) {
     return (
       <div className="space-y-8">
         <div className="text-center space-y-2">
@@ -411,16 +411,18 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
     );
   }
 
-  // Estado: Esperando confirmación (Cajero)
-  if (paymentState === "waiting" && selectedMethod === "cajero") {
+  // Estado: Esperando confirmación (Cajero / Transferencia Manual)
+  if (paymentState === "waiting" && (selectedMethod === "cajero" || selectedMethod === "transfer")) {
     return (
       <div className="space-y-8">
         <div className="text-center space-y-2">
           <h2 className="text-2xl font-serif font-semibold text-foreground">
-            Ingreso en Cajero
+            {selectedMethod === "cajero" ? "Ingreso en Cajero" : "Transferencia Bancaria"}
           </h2>
           <p className="text-muted-foreground">
-            Acude a un cajero y realiza un ingreso en efectivo
+            {selectedMethod === "cajero" 
+              ? "Acude a un cajero y realiza un ingreso en efectivo"
+              : "Realiza la transferencia desde la app de tu banco habitual"}
           </p>
         </div>
 
@@ -453,10 +455,17 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
           </div>
         </div>
 
-        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-          <p className="text-sm text-amber-700 dark:text-amber-300 text-center">
-            <strong>Importante:</strong> Avisaremos a nuestro equipo para que compruebe la recepción del ingreso. Mantén tu resguardo hasta que se confirme.
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4 space-y-4">
+          <p className="text-sm text-amber-700 dark:text-amber-300 text-center font-medium">
+            ¡Atención! Para validar tu reserva es obligatorio enviarnos una foto o PDF del justificante bancario.
           </p>
+          <Button 
+            variant="outline" 
+            className="w-full h-11 bg-white dark:bg-transparent border-amber-300 hover:bg-amber-100 text-amber-800 dark:text-amber-400 transition-colors"
+            onClick={() => window.open(`mailto:naujaras@proton.me?subject=Justificante de pago - Reserva ${encodeURIComponent(paymentConcept)}&body=Hola,%0D%0A%0D%0AAdjunto el justificante de pago para mi reserva:%0D%0A${encodeURIComponent(paymentConcept)}%0D%0A%0D%0AUn saludo.`, '_blank')}
+          >
+            ✉️ Enviar correo a naujaras@proton.me
+          </Button>
         </div>
 
         <Button
@@ -464,7 +473,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
           className="w-full h-14 text-lg font-medium bg-primary text-primary-foreground hover:bg-primary/90"
         >
           <Check className="mr-2 h-5 w-5" />
-          Ya he realizado el ingreso
+          Ya he realizado el {selectedMethod === "cajero" ? "ingreso" : "pago"} y enviado el justificante
         </Button>
 
         <Button
@@ -619,16 +628,16 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
             <div className="p-4 pt-0 border-t border-border">
               <div className="mt-4 space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Realiza una transferencia segura directamente procesada por Stripe mediante validación Open Banking. 
+                  Realiza una transferencia manual a nuestra cuenta bancaria. 
                 </p>
-                <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3">
-                  <p className="text-xs text-green-700 dark:text-green-300">
-                    <strong>Trazabilidad:</strong> Al usar la pasarela oficial, la validación se hace a través de Stripe y protege tu reserva automáticamente en cuanto se emite la transferencia.
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    <strong>Requiere Justificante:</strong> Tendrás que enviarnos una foto o PDF del recibo al correo electrónico para validar la reserva.
                   </p>
                 </div>
-                <Button onClick={() => handleStripePayment("transfer")} variant="outline" className="w-full h-12">
+                <Button onClick={() => handleManualMethodSelect("transfer")} variant="outline" className="w-full h-12">
                   <Building2 className="mr-2 h-4 w-4" />
-                  Pagar por Transferencia (Stripe)
+                  Ver cuenta para Transferencia
                 </Button>
               </div>
             </div>
@@ -668,9 +677,9 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
                     <strong>Confirmación manual:</strong> Tu reserva se confirmará cuando el propietario verifique el ingreso.
                   </p>
                 </div>
-                <Button onClick={handleCajeroSelect} variant="outline" className="w-full h-12">
+                <Button onClick={() => handleManualMethodSelect("cajero")} variant="outline" className="w-full h-12">
                   <Building2 className="mr-2 h-4 w-4" />
-                  Ingresar en cajero
+                  Ver número de cuenta bancaria
                 </Button>
               </div>
             </div>
