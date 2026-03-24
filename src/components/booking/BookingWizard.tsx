@@ -8,6 +8,7 @@ import { StepContractSigning } from "./StepContractSigning";
 import { StepPayment } from "./StepPayment";
 import { StepFinalConfirmation } from "./StepFinalConfirmation";
 import { PriceSummary } from "./PriceSummary";
+import { Chatbot } from "./Chatbot";
 import {
   BookingData,
   RoomId,
@@ -358,6 +359,7 @@ export function BookingWizard() {
           )}
         </div>
       </div>
+      <Chatbot />
     </div>
   );
 }
