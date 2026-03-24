@@ -198,14 +198,14 @@ export const ROOMS: RoomConfig[] = [
 ];
 
 export const DECORATIONS: { id: DecorationType; name: string; price: number }[] = [
-  { id: "romantica", name: "Decoración Romántica", price: 20 },
-  { id: "cumpleanos", name: "Decoración Cumpleaños", price: 20 },
-  { id: "aniversario", name: "Decoración Aniversario", price: 20 }
+  { id: "romantica", name: "Decoración Romántica", price: 9 },
+  { id: "cumpleanos", name: "Decoración Cumpleaños", price: 9 },
+  { id: "aniversario", name: "Decoración Aniversario", price: 9 }
 ];
 
 export const PACKS: { id: PackType; name: string; price: number }[] = [
-  { id: "cava", name: "Pack Cava", price: 15 },
-  { id: "lambrusco", name: "Pack Lambrusco", price: 10 }
+  { id: "cava", name: "Pack Cava", price: 9 },
+  { id: "lambrusco", name: "Pack Lambrusco", price: 9 }
 ];
 
 export const PERSONA_EXTRA_PRICE = 10;
@@ -255,11 +255,6 @@ export function calculateTotalPrice(booking: BookingData): number {
   // Personas extra
   if (canAddPersonasExtra(booking.room, booking.jornada)) {
     total += booking.extras.personasExtra * PERSONA_EXTRA_PRICE;
-  }
-
-  // Seguro de cancelación (5% del total de la estancia)
-  if (booking.seguroCancelacion) {
-    total += Math.round(total * INSURANCE_PERCENTAGE * 100) / 100;
   }
 
   return total;
