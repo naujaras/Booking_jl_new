@@ -140,6 +140,7 @@ export function StepClientData({
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="arrendadorNombre">Nombre completo <span className="text-destructive">*</span></Label>
+            <p className="text-[10px] opacity-0 -mt-1 leading-tight" aria-hidden="true">Spacer</p>
             <Input
               id="arrendadorNombre"
               placeholder="Juan García López"
@@ -187,6 +188,7 @@ export function StepClientData({
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="acompananteNombre">Nombre completo <span className="text-destructive">*</span></Label>
+            <p className="text-[10px] opacity-0 -mt-1 leading-tight" aria-hidden="true">Spacer</p>
             <Input
               id="acompananteNombre"
               placeholder="María Fernández Ruiz"
@@ -229,6 +231,7 @@ export function StepClientData({
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="email">Email <span className="text-destructive">*</span></Label>
+            <p className="text-[10px] opacity-0 -mt-1 leading-tight" aria-hidden="true">Spacer</p>
             <div className="relative mt-2">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input

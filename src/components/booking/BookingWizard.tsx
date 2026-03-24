@@ -353,7 +353,7 @@ export function BookingWizard() {
           )}
 
           {showPriceSummary && (
-            <div className="fixed bottom-4 right-4 w-72 hidden lg:block">
+            <div className="fixed bottom-24 right-4 w-72 hidden lg:block z-40">
               <PriceSummary booking={booking} />
             </div>
           )}
