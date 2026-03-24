@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { CreditCard, Smartphone, Building2, ChevronDown, ChevronUp, ExternalLink, Loader2, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, AlertTriangle, Shield, Info } from "lucide-react";
+import { CreditCard, Smartphone, Building2, ChevronDown, ChevronUp, ExternalLink, Loader2, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, AlertTriangle, Shield, Info, Wallet, Landmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -49,13 +49,19 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
   const [attempts, setAttempts] = useState(0);
   const [isManualChecking, setIsManualChecking] = useState(false);
 
+  // Nuevo estado para el modal de advertencia de Stripe
+  const [showStripeWarning, setShowStripeWarning] = useState(false);
+  const [pendingStripeMethod, setPendingStripeMethod] = useState<"card" | "bizum" | "transfer" | null>(null);
+
+  const [cajeroDni, setCajeroDni] = useState("");
+  const [cajeroError, setCajeroError] = useState("");
+
   const userEmail = getEffectiveEmail(booking.clientData.email);
   const totalPrice = calculateTotalPrice(booking);
-  const insurancePrice = calculateInsurancePrice(booking);
   const room = booking.room ? getRoomById(booking.room) : null;
   const jornada = booking.room && booking.jornada ? getJornadaForRoom(booking.room, booking.jornada) : null;
 
-  // Generar concepto para Bizum/Transferencia
+  // Generar concepto para Cajero
   const paymentConcept = `${room?.name || ''} - ${booking.date ? format(booking.date, "dd/MM/yyyy", { locale: es }) : ''} - ${jornada?.name || ''} - ${booking.clientData.arrendadorNombre}`;
 
   const copyToClipboard = async (text: string, field: string) => {
@@ -64,15 +70,12 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
       setCopied(field);
       setTimeout(() => setCopied(null), 2000);
     } catch (err) {
-      console.error("Error copying to clipboard:", err);
+      console.error("Error copiando al portapapeles:", err);
     }
   };
 
-  // Función para consultar el estado del pago en n8n
   const checkPaymentStatus = useCallback(async (isManual = false) => {
-    if (isManual) {
-      setIsManualChecking(true);
-    }
+    if (isManual) setIsManualChecking(true);
 
     try {
       const response = await fetch(N8N_PAYMENT_STATUS_WEBHOOK, {
@@ -90,17 +93,13 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
         }),
       });
       const rawData = await response.json();
-
-      // n8n devuelve un array, tomamos el primer elemento
       const data: PaymentStatusResponse = Array.isArray(rawData) ? rawData[0] : rawData;
 
-      // Verificar si el pago está completado
       if (data?.payment_status === "completed") {
         setPaymentState("completed");
         return true;
       }
 
-      // No pagado aún
       if (!isManual) {
         setAttempts(prev => {
           const newAttempts = prev + 1;
@@ -115,23 +114,17 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
       console.log("Error checking payment status:", error);
       return false;
     } finally {
-      if (isManual) {
-        setIsManualChecking(false);
-      }
+      if (isManual) setIsManualChecking(false);
     }
   }, [userEmail, booking, room, jornada, paymentConcept]);
 
-  // Polling cada 1 minuto para verificar si el pago fue completado
   useEffect(() => {
-    // Solo hacer polling si estamos esperando pago con tarjeta y no hemos llegado al timeout
-    if (paymentState !== "waiting" || selectedMethod !== "card" || attempts >= MAX_ATTEMPTS) return;
+    if (paymentState !== "waiting" || (selectedMethod !== "card" && selectedMethod !== "bizum" && selectedMethod !== "transfer") || attempts >= MAX_ATTEMPTS) return;
 
-    // Primera comprobación después de 5 segundos
     const immediateCheck = setTimeout(() => {
       checkPaymentStatus();
     }, 5000);
 
-    // Polling cada minuto
     const interval = setInterval(() => {
       if (attempts < MAX_ATTEMPTS) {
         checkPaymentStatus();
@@ -152,10 +145,18 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
     }
   };
 
-  const handleStripePayment = async (method: "card" | "bizum") => {
+  const initiateStripePayment = (method: "card" | "bizum" | "transfer") => {
+    setPendingStripeMethod(method);
+    setShowStripeWarning(true);
+  };
+
+  const executeStripePayment = async () => {
+    if (!pendingStripeMethod) return;
+    
+    setShowStripeWarning(false);
     setPaymentState("processing");
-    setSelectedMethod(method);
-    setAttempts(0); // Reset attempts when starting payment
+    setSelectedMethod(pendingStripeMethod);
+    setAttempts(0);
 
     try {
       const paymentUrl = booking.paymentUrl;
@@ -173,26 +174,15 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
     }
   };
 
-  const handleManualMethodSelect = (method: "cajero" | "transfer") => {
+  const handleManualMethodSelect = (method: "cajero") => {
     setSelectedMethod(method);
     setPaymentState("waiting");
-  };
-
-  const openWhatsApp = () => {
-    const message = encodeURIComponent(
-      `Hola, he realizado el pago de mi reserva:\n\n` +
-      `Concepto: ${paymentConcept}\n` +
-      `Importe: ${totalPrice}€\n\n` +
-      `Adjunto comprobante de pago.`
-    );
-    window.open(`https://wa.me/${WHATSAPP_PHONE}?text=${message}`, '_blank');
   };
 
   const toggleMethod = (method: PaymentMethod) => {
     setExpandedMethod(expandedMethod === method ? null : method);
   };
 
-  // Estado: Procesando pago con tarjeta
   if (paymentState === "processing") {
     return (
       <div className="space-y-8 text-center py-12">
@@ -211,7 +201,6 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
     );
   }
 
-  // Estado: Error
   if (paymentState === "error") {
     return (
       <div className="space-y-8 text-center py-12">
@@ -236,8 +225,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
     );
   }
 
-  // Estado: Pago completado (Stripe)
-  if (paymentState === "completed" && (selectedMethod === "card" || selectedMethod === "bizum")) {
+  if (paymentState === "completed" && (selectedMethod === "card" || selectedMethod === "bizum" || selectedMethod === "transfer")) {
     return (
       <div className="space-y-8">
         <div className="text-center space-y-2">
@@ -275,8 +263,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
     );
   }
 
-  // Estado: Timeout esperando pago (Stripe)
-  if (paymentState === "timeout" && (selectedMethod === "card" || selectedMethod === "bizum")) {
+  if (paymentState === "timeout" && (selectedMethod === "card" || selectedMethod === "bizum" || selectedMethod === "transfer")) {
     return (
       <div className="space-y-8">
         <div className="text-center space-y-2">
@@ -288,7 +275,6 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
           </p>
         </div>
 
-        {/* Mensaje de timeout */}
         <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-6">
           <div className="flex items-start gap-4">
             <AlertTriangle className="h-6 w-6 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
@@ -297,21 +283,19 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
                 Tiempo de espera agotado
               </h3>
               <p className="text-sm text-amber-700 dark:text-amber-300">
-                Han pasado 10 minutos y no hemos podido verificado automáticamente tu pago.
-                Si ya has completado el pago, pulsa el botón de abajo para verificar manualmente.
+                Han pasado 10 minutos y no hemos podido verificar automáticamente tu pago.
+                Si ya has completado el pago en la otra pestaña, pulsa el botón de abajo para verificar manualmente.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Mensaje de error temporal */}
         {errorMessage && (
           <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4">
             <p className="text-sm text-destructive text-center">{errorMessage}</p>
           </div>
         )}
 
-        {/* Botones */}
         <div className="space-y-3">
           {stripeUrl && (
             <Button
@@ -357,8 +341,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
     );
   }
 
-  // Estado: Esperando confirmación (Stripe methods)
-  if (paymentState === "waiting" && (selectedMethod === "card" || selectedMethod === "bizum")) {
+  if (paymentState === "waiting" && (selectedMethod === "card" || selectedMethod === "bizum" || selectedMethod === "transfer")) {
     return (
       <div className="space-y-8">
         <div className="text-center space-y-2">
@@ -383,6 +366,21 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
               </p>
             </div>
           </div>
+        </div>
+
+        {/* ALERTA CRÍTICA: NO CERRAR PESTAÑA */}
+        <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-xl p-6">
+           <div className="flex items-start gap-4">
+             <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-500 flex-shrink-0 mt-0.5" />
+             <div>
+               <h3 className="font-bold text-red-800 dark:text-red-400">
+                 ¡ATENCIÓN! No cierres esta pestaña
+               </h3>
+               <p className="text-sm text-red-700 dark:text-red-300">
+                 Cuando termines de pagar en la otra pestaña, <strong>vuelve aquí</strong>. Si cierras esta pantalla antes de que verifiquemos el pago, tu reserva podría quedarse en un estado incompleto.
+               </p>
+             </div>
+           </div>
         </div>
 
         <div className="bg-card border border-border rounded-xl p-6 text-center space-y-4">
@@ -412,93 +410,174 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
     );
   }
 
-  // Estado: Esperando confirmación (Cajero / Transferencia Manual)
-  if (paymentState === "waiting" && (selectedMethod === "cajero" || selectedMethod === "transfer")) {
+  // Estado: Esperando confirmación (Cajero Manual)
+  if ((paymentState === "waiting" || paymentState === "processing") && selectedMethod === "cajero") {
+    
+    const validarSaldoCajero = async () => {
+      setCajeroError("");
+      const dni = cajeroDni.trim().toUpperCase();
+      
+      if (!dni) {
+        setCajeroError("El DNI es necesario para consultar su saldo.");
+        return;
+      }
+      
+      const regex = /^[0-9]{8}[A-Z]$/;
+      if (!regex.test(dni)) {
+        setCajeroError("El formato del DNI es incorrecto. Ejemplo: 12345678X");
+        return;
+      }
+
+      setPaymentState("processing");
+
+      try {
+        // --- WEBHOOK DE n8n PARA CONSULTAR SALDO ---
+        // Se espera que este webhook devuelva { "saldo": numero }
+        const resp = await fetch("https://n8n-n8n.npfusf.easypanel.host/webhook/saldo-cajero", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dni })
+        });
+
+        if (!resp.ok) {
+          throw new Error("No se pudo contactar con el sistema de saldo.");
+        }
+
+        const data = await resp.json();
+        
+        // Simulación temporal si el webhook devuelve error 404 porque no existe aún,
+        // esto evitará romper el flujo localmente, pero en Prod debe actuar según la respuesta real.
+        const saldoDisponible = parseFloat(data.saldo || "0"); 
+
+        if (saldoDisponible >= totalPrice) {
+          // TIENE SALDO -> CONTINUAMOS CON LA RESERVA
+          onPendingVerification();
+        } else {
+          // NO TIENE SALDO -> NO PUEDE CONTRATAR
+          setPaymentState("waiting");
+          setCajeroError(`Saldo insuficiente. Su saldo actual es ${saldoDisponible}€ y necesita ${totalPrice}€. Regargue su monedero primero.`);
+        }
+      } catch (err) {
+        setPaymentState("waiting");
+        // Si el webhook no existe todavía, por seguridad vamos a bloquearlo.
+        setCajeroError("Error al contactar con el sistema de saldo. Por favor, asegúrese de que el webhook de n8n está activo.");
+      }
+    };
+
     return (
-      <div className="space-y-8">
+      <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
         <div className="text-center space-y-2">
+          <div className="flex justify-center mb-4">
+            <div className="p-4 bg-green-100 dark:bg-green-900/40 rounded-full">
+              <Landmark className="h-8 w-8 text-green-600 dark:text-green-400" />
+            </div>
+          </div>
           <h2 className="text-2xl font-serif font-semibold text-foreground">
-            {selectedMethod === "cajero" ? "Ingreso en Cajero" : "Transferencia Bancaria"}
+            Ingreso en Cajero
           </h2>
-          <p className="text-muted-foreground">
-            {selectedMethod === "cajero" 
-              ? "Acude a un cajero y realiza un ingreso en efectivo"
-              : "Realiza la transferencia desde la app de tu banco habitual"}
+          <p className="text-muted-foreground max-w-sm mx-auto">
+            Para validar la reserva mediante ingreso en efectivo, verifique primero su saldo monedero.
           </p>
         </div>
 
-        <div className="bg-card border-2 border-primary rounded-xl p-6 space-y-4">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-1">Importe a pagar</p>
+        <div className="bg-card border border-border rounded-xl p-6 shadow-sm space-y-6">
+          <div className="text-center bg-muted/30 py-4 rounded-lg">
+            <p className="text-sm font-medium text-foreground mb-1">Total Reserva</p>
             <p className="text-3xl font-bold text-primary">{totalPrice}€</p>
           </div>
 
-          <div className="border-t border-border pt-4 space-y-3">
-            <div className="space-y-2">
-              <span className="text-sm text-muted-foreground">Titular de la cuenta:</span>
-              <p className="font-medium text-sm text-foreground">{TITULAR_CUENTA}</p>
-            </div>
-
-            <div className="space-y-2">
-              <span className="text-sm text-muted-foreground">IBAN / Cuenta (BBVA):</span>
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-semibold text-sm bg-muted p-2 rounded flex-1">{IBAN}</span>
-                <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => copyToClipboard(IBAN.replace(/\s/g, ''), 'iban')}>
-                  {copied === 'iban' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <span className="text-sm text-muted-foreground">Concepto:</span>
-              <div className="flex items-start gap-2">
-                <p className="text-sm font-medium bg-muted p-2 rounded flex-1">{paymentConcept}</p>
-                <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => copyToClipboard(paymentConcept, 'concept')}>
-                  {copied === 'concept' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Wallet className="h-4 w-4 text-green-600" />
+              Recuerde consultar aquí su saldo
+            </label>
+            <input 
+              type="text"
+              value={cajeroDni}
+              onChange={(e) => setCajeroDni(e.target.value.toUpperCase())}
+              placeholder="Ej: 12345678X"
+              className="flex h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 uppercase"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Introduzca el DNI con letras mayúsculas y sin espacios.
+            </p>
+            
+            {cajeroError && (
+              <p className="text-sm font-semibold text-destructive mt-3 bg-red-50 dark:bg-red-950 p-3 rounded-md border border-red-200 dark:border-red-900">
+                {cajeroError}
+              </p>
+            )}
           </div>
         </div>
 
-        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4 space-y-4">
-          <p className="text-sm text-amber-700 dark:text-amber-300 text-center font-medium">
-            ¡Atención! Para validar tu reserva es obligatorio enviarnos una foto o PDF del justificante bancario.
-          </p>
-          <Button 
-            variant="outline" 
-            className="w-full h-11 bg-white dark:bg-transparent border-amber-300 hover:bg-amber-100 text-amber-800 dark:text-amber-400 transition-colors"
-            onClick={() => window.open(`mailto:naujaras@proton.me?subject=Justificante de pago - Reserva ${encodeURIComponent(paymentConcept)}&body=Hola,%0D%0A%0D%0AAdjunto el justificante de pago para mi reserva:%0D%0A${encodeURIComponent(paymentConcept)}%0D%0A%0D%0AUn saludo.`, '_blank')}
+        <div className="flex flex-col gap-3">
+          <Button
+            onClick={validarSaldoCajero}
+            disabled={!cajeroDni.trim() || paymentState === "processing"}
+            className="w-full h-14 text-lg font-bold bg-green-600 hover:bg-green-700 text-white shadow-md transition-all"
           >
-            ✉️ Enviar correo a naujaras@proton.me
+            {paymentState === "processing" ? (
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            ) : (
+              <Wallet className="mr-2 h-5 w-5" />
+            )}
+            Consultar Saldo y Pagar
+          </Button>
+
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setPaymentState("selecting");
+              setSelectedMethod(null);
+            }}
+            className="w-full h-12"
+          >
+            ← Elegir otro método de pago
           </Button>
         </div>
-
-        <Button
-          onClick={onPendingVerification}
-          className="w-full h-14 text-lg font-medium bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          <Check className="mr-2 h-5 w-5" />
-          Ya he realizado el {selectedMethod === "cajero" ? "ingreso" : "pago"} y enviado el justificante
-        </Button>
-
-        <Button
-          variant="ghost"
-          onClick={() => {
-            setPaymentState("selecting");
-            setSelectedMethod(null);
-          }}
-          className="w-full h-10 text-sm"
-        >
-          Elegir otro método de pago
-        </Button>
       </div>
     );
   }
 
-  // Estado: Selección de método de pago
   return (
     <div className="space-y-8">
+
+      {/* MODAL DE ADVERTENCIA REDIRECCIÓN STRIPE */}
+      {showStripeWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-background rounded-xl shadow-xl max-w-sm w-full p-6 space-y-6 slide-in-from-bottom-4 animate-in duration-300">
+            <div className="flex flex-col items-center justify-center text-center space-y-4">
+              <div className="p-3 bg-blue-100 dark:bg-blue-900/40 rounded-full">
+                <Shield className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+              </div>
+              <h3 className="text-xl font-bold">Pago Seguro</h3>
+              <p className="text-muted-foreground text-sm">
+                A continuación se abrirá la pasarela de pago segura de Stripe en una nueva pestaña.
+              </p>
+              
+              <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg p-4 w-full text-left">
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  IMPORTANTE
+                </p>
+                <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
+                  <strong>NO cierres esta página.</strong> Cuando termines de pagar, debes volver a esta misma pestaña para confirmar tu reserva.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <Button onClick={executeStripePayment} className="w-full h-12 text-base">
+                Entendido, ir a pagar
+              </Button>
+              <Button variant="ghost" onClick={() => setShowStripeWarning(false)} className="w-full h-10">
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-serif font-semibold text-foreground">
           Método de Pago
@@ -512,9 +591,6 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
       <div className="bg-primary text-primary-foreground rounded-xl p-6 text-center">
         <p className="text-sm opacity-90">Total a pagar</p>
         <p className="text-4xl font-bold">{totalPrice}€</p>
-        {booking.seguroCancelacion && (
-          <p className="text-xs opacity-75 mt-1">(incluye {insurancePrice}€ de seguro de cancelación)</p>
-        )}
       </div>
 
       {/* Opciones de pago */}
@@ -530,7 +606,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
                 <CreditCard className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-medium text-foreground">Tarjeta de Crédito/Débito</h3>
+                <h3 className="font-medium text-foreground">Tarjeta de Crédito o Débito</h3>
                 <p className="text-xs text-muted-foreground">Pago inmediato y seguro</p>
               </div>
             </div>
@@ -552,14 +628,9 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
                 <p className="text-sm text-muted-foreground">
                   Pago seguro a través de pasarela de pago. Tu reserva se confirmará automáticamente al completar el pago.
                 </p>
-                <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3">
-                  <p className="text-xs text-green-700 dark:text-green-300">
-                    <strong>Confirmación inmediata:</strong> Tu reserva quedará confirmada al instante.
-                  </p>
-                </div>
-                <Button onClick={() => handleStripePayment("card")} className="w-full h-12">
+                <Button onClick={() => initiateStripePayment("card")} className="w-full h-12">
                   <CreditCard className="mr-2 h-4 w-4" />
-                  Pagar {totalPrice}€ con tarjeta
+                  Pagar {totalPrice}€ con Tarjeta
                 </Button>
               </div>
             </div>
@@ -578,7 +649,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
               </div>
               <div>
                 <h3 className="font-medium text-foreground">Bizum</h3>
-                <p className="text-xs text-muted-foreground">Pago por Stripe con tu móvil</p>
+                <p className="text-xs text-muted-foreground">Pago por pasarela oficial segura</p>
               </div>
             </div>
             {expandedMethod === "bizum" ? (
@@ -592,23 +663,18 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
             <div className="p-4 pt-0 border-t border-border">
               <div className="mt-4 space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Pago seguro a través de la pasarela oficial de Stripe. Selecciona Bizum tras redireccionarte para completar tu reserva.
+                  Al redirigirte a Stripe, escoge la opción de Bizum e introduce tu número para confirmar al instante.
                 </p>
-                <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3">
-                  <p className="text-xs text-green-700 dark:text-green-300">
-                    <strong>Confirmación automática:</strong> Tu reserva quedará confirmada al instante tras procesar el Bizum en Stripe.
-                  </p>
-                </div>
-                <Button onClick={() => handleStripePayment("bizum")} variant="outline" className="w-full h-12">
+                <Button onClick={() => initiateStripePayment("bizum")} variant="outline" className="w-full h-12">
                   <Smartphone className="mr-2 h-4 w-4" />
-                  Pagar con Bizum
+                  Pagar {totalPrice}€ con Bizum
                 </Button>
               </div>
             </div>
           )}
         </div>
 
-        {/* Transferencia Bancaria */}
+        {/* Transferencia Bancaria por Stripe */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <button
             onClick={() => toggleMethod("transfer")}
@@ -620,7 +686,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
               </div>
               <div>
                 <h3 className="font-medium text-foreground">Transferencia Bancaria</h3>
-                <p className="text-xs text-muted-foreground">Pago manual a través de tu banco</p>
+                <p className="text-xs text-muted-foreground">A través de nuestra pasarela Stripe</p>
               </div>
             </div>
             {expandedMethod === "transfer" ? (
@@ -634,23 +700,18 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
             <div className="p-4 pt-0 border-t border-border">
               <div className="mt-4 space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Realiza una transferencia manual a nuestra cuenta bancaria. 
+                  Serás redirigido a Stripe, donde se te facilitarán los datos para tu transferencia bancaria automática.
                 </p>
-                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                  <p className="text-xs text-amber-700 dark:text-amber-300">
-                    <strong>Requiere Justificante:</strong> Tendrás que enviarnos una foto o PDF del recibo al correo electrónico para validar la reserva.
-                  </p>
-                </div>
-                <Button onClick={() => handleManualMethodSelect("transfer")} variant="outline" className="w-full h-12">
+                <Button onClick={() => initiateStripePayment("transfer")} variant="outline" className="w-full h-12">
                   <Building2 className="mr-2 h-4 w-4" />
-                  Ver cuenta para Transferencia
+                  Ir a realizar Transferencia
                 </Button>
               </div>
             </div>
           )}
         </div>
 
-        {/* Ingreso en Cajero */}
+        {/* Ingreso en Cajero (Único flujo manual real) */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <button
             onClick={() => toggleMethod("cajero")}
@@ -661,8 +722,8 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
                 <Building2 className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-medium text-foreground">Ingreso en Cajero</h3>
-                <p className="text-xs text-muted-foreground">Ingreso directo de efectivo</p>
+                <h3 className="font-medium text-foreground">Cajero Automático</h3>
+                <p className="text-xs text-muted-foreground">Pago contra ingreso previo</p>
               </div>
             </div>
             {expandedMethod === "cajero" ? (
@@ -676,16 +737,10 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
             <div className="p-4 pt-0 border-t border-border">
               <div className="mt-4 space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Realiza el ingreso en efectivo directamente en un cajero de nuestra entidad. Se reflejará al instante.
+                  Opción <strong>únicamente válida</strong> si tienes recargado tu saldo previamente en nuestros sistemas a través de un ingreso en cajero.
                 </p>
-                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                  <p className="text-xs text-amber-700 dark:text-amber-300">
-                    <strong>Confirmación manual:</strong> Tu reserva se confirmará cuando el propietario verifique el ingreso.
-                  </p>
-                </div>
                 <Button onClick={() => handleManualMethodSelect("cajero")} variant="outline" className="w-full h-12">
-                  <Building2 className="mr-2 h-4 w-4" />
-                  Ver número de cuenta bancaria
+                   Utilizar Saldo de Ingreso
                 </Button>
               </div>
             </div>
@@ -693,7 +748,6 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
         </div>
       </div>
 
-      {/* Navigation */}
       <Button
         variant="outline"
         onClick={onBack}

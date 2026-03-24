@@ -56,16 +56,19 @@ export function StepClientData({
         break;
       case "arrendadorDni":
         if (!value.trim()) error = "El DNI es obligatorio";
-        else if (!validateDNI(value)) error = "DNI/NIE inválido. Verifica el formato y la letra";
+        else if (!validateDNI(value)) error = "Formato inválido (Ej: 00000000X)";
         break;
       case "acompananteNombre":
-        if (value.trim() && !validateFullName(value)) error = "Introduce nombre y apellidos";
+        if (!value.trim()) error = "El nombre del acompañante es obligatorio";
+        else if (!validateFullName(value)) error = "Introduce nombre y apellidos";
         break;
       case "acompananteDni":
-        if (value.trim() && !validateDNI(value)) error = "DNI/NIE inválido. Verifica el formato y la letra";
+        if (!value.trim()) error = "El DNI del acompañante es obligatorio";
+        else if (!validateDNI(value)) error = "Formato inválido (Ej: 00000000X)";
         break;
       case "email":
-        if (value.trim() && !validateEmail(value)) error = "Email inválido";
+        if (!value.trim()) error = "El email es obligatorio";
+        else if (!validateEmail(value)) error = "Email inválido";
         break;
       case "telefono":
         if (!value.trim()) error = "El teléfono es obligatorio";
@@ -81,16 +84,11 @@ export function StepClientData({
     const fields: (keyof ClientData)[] = [
       "arrendadorNombre",
       "arrendadorDni",
+      "acompananteNombre",
+      "acompananteDni",
+      "email",
       "telefono"
     ];
-
-    // Validar opcionales solo si están informados
-    if (clientData.acompananteNombre.trim() || clientData.acompananteDni.trim()) {
-      fields.push("acompananteNombre", "acompananteDni");
-    }
-    if (clientData.email.trim()) {
-      fields.push("email");
-    }
 
     let isValid = true;
     const newErrors: FormErrors = {};
@@ -128,6 +126,11 @@ export function StepClientData({
         </p>
       </div>
 
+      {/* Aviso Cajero */}
+      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4 text-sm text-amber-800 dark:text-amber-300">
+        <strong>Aviso sobre pagos en cajero:</strong> Si tienes pensado realizar el pago final mediante la opción "Ingreso en Cajero", es <strong>estrictamente necesario</strong> que tengas el saldo previamente ingresado en nuestro sistema. Si no tienes saldo, la reserva no podrá confirmarse. Consulta la opción "Ingresos en efectivo" disponible en la pantalla inicial (HUB) para más información.
+      </div>
+
       {/* Arrendador */}
       <div className="space-y-4">
         <h3 className="font-medium text-foreground flex items-center gap-2">
@@ -136,7 +139,7 @@ export function StepClientData({
         </h3>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="arrendadorNombre">Nombre completo</Label>
+            <Label htmlFor="arrendadorNombre">Nombre completo <span className="text-destructive">*</span></Label>
             <Input
               id="arrendadorNombre"
               placeholder="Juan García López"
@@ -150,8 +153,9 @@ export function StepClientData({
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="arrendadorDni">DNI/NIE</Label>
-            <div className="relative">
+            <Label htmlFor="arrendadorDni">DNI/NIE <span className="text-destructive">*</span></Label>
+            <p className="text-[10px] text-muted-foreground -mt-1 leading-tight">Obligatorio (formato: 00000000X)</p>
+            <div className="relative mt-2">
               <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 id="arrendadorDni"
@@ -171,13 +175,18 @@ export function StepClientData({
 
       {/* Acompañante */}
       <div className="space-y-4">
-        <h3 className="font-medium text-foreground flex items-center gap-2">
-          <User className="h-4 w-4" />
-          Datos del Acompañante (opcional)
-        </h3>
+        <div className="flex flex-col gap-1">
+          <h3 className="font-medium text-foreground flex items-center gap-2">
+            <User className="h-4 w-4" />
+            Datos del Acompañante
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            * Si usted va a reservar solo para usted (asiste en solitario), por normativas de registro <strong>debe introducir sus propios datos duplicados</strong> en esta sección de acompañante.
+          </p>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="acompananteNombre">Nombre completo (opcional)</Label>
+            <Label htmlFor="acompananteNombre">Nombre completo <span className="text-destructive">*</span></Label>
             <Input
               id="acompananteNombre"
               placeholder="María Fernández Ruiz"
@@ -191,8 +200,9 @@ export function StepClientData({
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="acompananteDni">DNI/NIE (opcional)</Label>
-            <div className="relative">
+            <Label htmlFor="acompananteDni">DNI/NIE <span className="text-destructive">*</span></Label>
+            <p className="text-[10px] text-muted-foreground -mt-1 leading-tight">Obligatorio (formato: 00000000X)</p>
+            <div className="relative mt-2">
               <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 id="acompananteDni"
@@ -218,8 +228,8 @@ export function StepClientData({
         </h3>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="email">Email (opcional)</Label>
-            <div className="relative">
+            <Label htmlFor="email">Email <span className="text-destructive">*</span></Label>
+            <div className="relative mt-2">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 id="email"
@@ -236,8 +246,9 @@ export function StepClientData({
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="telefono">Teléfono</Label>
-            <div className="relative">
+            <Label htmlFor="telefono">Teléfono móvil <span className="text-destructive">*</span></Label>
+            <p className="text-[10px] text-muted-foreground -mt-1 leading-tight">Obligatorio para enviarte códigos</p>
+            <div className="relative mt-2">
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 id="telefono"
