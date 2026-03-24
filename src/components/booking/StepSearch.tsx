@@ -146,7 +146,7 @@ export function StepSearch({
           Debes consultarlo usando el botón correspondiente dentro de nuestro HUB principal.
         </p>
         <a 
-          href="https://naujaras.com" 
+          href="https://naujaras.com/#screen-cajero" 
           target="_blank"
           rel="noopener noreferrer" 
           className="inline-flex items-center justify-center max-w-max px-4 py-2 mt-1 bg-amber-200 border border-amber-400 rounded-md font-bold text-amber-950 hover:bg-amber-300 transition-colors shadow-sm"
