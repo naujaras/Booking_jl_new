@@ -112,6 +112,11 @@ export function BookingWizard() {
   });
   const [paymentPendingVerification, setPaymentPendingVerification] = useState(false);
 
+  // Asegurar scroll position arriba al cambiar de paso
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentStep]);
+
   // Sincronizar con cambios en la URL (importante para redirecciones del Hub)
   useEffect(() => {
     const data = getInitialBookingData();
