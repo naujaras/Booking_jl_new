@@ -42,22 +42,39 @@ export function StepFinalConfirmation({ booking, onReset, pendingVerification = 
   // Enviar datos al webhook cuando se monta el componente
   useEffect(() => {
     const sendConfirmation = async () => {
-      // Calcular fecha de entrada y salida en formato ISO 8601
+      // Calcular fecha de entrada y salida reales basadas en toda la CESTA de selecciones
       let dateStart: string | null = null;
       let dateEnd: string | null = null;
+      let fechasCompletas = "";
 
-      if (booking.date && jornada) {
-        const entryDate = new Date(booking.date);
-        dateStart = formatDateTimeISO(entryDate, jornada.timeSlot.start);
-
-        // Si la jornada termina al día siguiente
-        const exitDate = new Date(booking.date);
-        if (jornada.timeSlot.nextDay) {
-          exitDate.setDate(exitDate.getDate() + 1);
+      if (booking.selections && booking.selections.length > 0 && room) {
+        const sortedSelections = [...booking.selections].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        
+        // 1. Entrada (primera fecha seleccionada)
+        const firstSel = sortedSelections[0];
+        const firstJornada = getJornadaForRoom(room.id, firstSel.jornada);
+        if (firstJornada) {
+          dateStart = formatDateTimeISO(new Date(firstSel.date), firstJornada.timeSlot.start);
         }
-        const [exitHour, exitMin] = jornada.timeSlot.end.split(':').map(Number);
-        exitDate.setHours(exitHour, exitMin, 0, 0);
-        dateEnd = formatDateTimeISO(exitDate, jornada.timeSlot.end);
+
+        // 2. Salida (última fecha seleccionada)
+        const lastSel = sortedSelections[sortedSelections.length - 1];
+        const lastJornada = getJornadaForRoom(room.id, lastSel.jornada);
+        if (lastJornada) {
+          const exitDate = new Date(lastSel.date);
+          if (lastJornada.timeSlot.nextDay) {
+            exitDate.setDate(exitDate.getDate() + 1);
+          }
+          const [exitHour, exitMin] = lastJornada.timeSlot.end.split(':').map(Number);
+          exitDate.setHours(exitHour, exitMin, 0, 0);
+          dateEnd = formatDateTimeISO(exitDate, lastJornada.timeSlot.end);
+        }
+
+        // 3. Texto resumen completo para Excel/Emails
+        fechasCompletas = sortedSelections.map(sel => {
+          const j = getJornadaForRoom(room.id, sel.jornada);
+          return `${format(new Date(sel.date), "dd/MM/yyyy")} (${j?.name})`;
+        }).join(" + ");
       }
 
       // Datos comunes para ambos webhooks
@@ -72,6 +89,13 @@ export function StepFinalConfirmation({ booking, onReset, pendingVerification = 
         horario: jornada ? `${jornada.timeSlot.start} - ${jornada.timeSlot.end}` : null,
         date_start: dateStart,
         date_end: dateEnd,
+        fechas_completas: fechasCompletas,
+        
+        // --- Variables separadas exactas para tu Excel y n8n ---
+        fecha_entrada: dateStart ? dateStart.split('T')[0] : null,
+        hora_entrada: dateStart ? dateStart.split('T')[1].substring(0, 5) : null,
+        fecha_salida: dateEnd ? dateEnd.split('T')[0] : null,
+        hora_salida: dateEnd ? dateEnd.split('T')[1].substring(0, 5) : null,
 
         // Datos del cliente
         arrendadorNombre: booking.clientData.arrendadorNombre,

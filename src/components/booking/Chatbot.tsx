@@ -155,8 +155,8 @@ export function Chatbot() {
                   <div 
                     className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-sm ${
                       msg.sender === "user" 
-                        ? "bg-primary text-primary-foreground rounded-br-none" 
-                        : "bg-white dark:bg-slate-800 border border-border text-foreground rounded-bl-none"
+                        ? "bg-primary text-white rounded-br-none" 
+                        : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-bl-none"
                     }`}
                   >
                     {msg.isTyping ? (
