@@ -13,13 +13,12 @@ import {
 
 const N8N_BOOKING_REGISTRO_WEBHOOK = "https://n8n-n8n.npfusf.easypanel.host/webhook/c1000a02-ce51-4e58-8ce9-e9db283b9d1a";
 
-// Función auxiliar para formatear fecha y hora en ISO 8601 con timezone España
+// Función auxiliar para formatear fecha y hora en ISO sin offset forzado para que n8n asuma su zona local
 function formatDateTimeISO(date: Date, time: string): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
-  // time viene como "HH:mm", añadimos segundos y milisegundos
-  return `${year}-${month}-${day}T${time}:00.000+01:00`;
+  return `${year}-${month}-${day}T${time}:00`;
 }
 
 interface StepFinalConfirmationProps {
