@@ -13,13 +13,19 @@ import {
 
 const N8N_BOOKING_REGISTRO_WEBHOOK = "https://n8n-n8n.npfusf.easypanel.host/webhook/c1000a02-ce51-4e58-8ce9-e9db283b9d1a";
 
-// Calcular dinámicamente si España está en +01:00 (Invierno) o +02:00 (Verano)
-function getMadridOffset(date: Date): string {
-  const options = { timeZone: 'Europe/Madrid', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric' } as any;
-  const strMadrid = date.toLocaleString('en-US', options);
-  const strUTC = date.toLocaleString('en-US', { ...options, timeZone: 'UTC' });
-  const diffHours = Math.round((new Date(strMadrid).getTime() - new Date(strUTC).getTime()) / 3600000);
-  return `+0${diffHours}:00`;
+// Calcular 100% matemáticamente el horario de verano/invierno en España para no fallar en iPhones/Safari
+function getSpainOffset(dateStr: string): string {
+  const d = new Date(dateStr);
+  const year = d.getFullYear();
+  // Último domingo de marzo
+  const dstStart = new Date(year, 3, 0); // 31 marzo
+  dstStart.setDate(dstStart.getDate() - dstStart.getDay());
+  // Último domingo de octubre
+  const dstEnd = new Date(year, 10, 0); // 31 octubre
+  dstEnd.setDate(dstEnd.getDate() - dstEnd.getDay());
+  
+  const isDST = d.getTime() >= dstStart.getTime() && d.getTime() < dstEnd.getTime();
+  return isDST ? "+02:00" : "+01:00";
 }
 
 // Función auxiliar para formatear fecha y hora en ISO siempre anclado a la zona horaria española
@@ -27,7 +33,7 @@ function formatDateTimeISO(date: Date, time: string): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
-  const offset = getMadridOffset(date);
+  const offset = getSpainOffset(date.toISOString());
   return `${year}-${month}-${day}T${time}:00.000${offset}`;
 }
 
