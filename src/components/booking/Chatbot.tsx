@@ -185,7 +185,7 @@ export function Chatbot() {
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Escribe tu duda aquí..."
-                className="flex-1 rounded-full bg-slate-100 dark:bg-slate-800 border-transparent focus-visible:ring-primary h-12"
+                className="flex-1 rounded-full bg-slate-100 dark:bg-slate-800 border-transparent text-slate-900 dark:text-slate-100 focus-visible:ring-primary h-12"
               />
               <Button 
                 onClick={handleSend}
