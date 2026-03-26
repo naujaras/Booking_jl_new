@@ -129,24 +129,49 @@ export function StepConfirmation({
         {/* Details */}
         <div className="p-6 space-y-4">
           {/* Date & Time */}
-          <div className="flex items-start gap-4">
-            <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
-            <div>
-              <p className="font-medium text-foreground">
-                {booking.date && format(booking.date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}
-              </p>
-              <p className="text-sm text-muted-foreground">{jornada?.name}</p>
+          {booking.selections && booking.selections.length > 0 ? (
+            <div className="space-y-3">
+              <div className="flex items-start gap-4">
+                <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
+                <div className="space-y-2 w-full pr-4">
+                  <p className="font-medium text-foreground">Fechas y horarios</p>
+                  {booking.selections.map((s, idx) => {
+                    const j = getJornadaForRoom(booking.room!, s.jornada);
+                    return (
+                      <div key={idx} className="text-sm border rounded-md p-3 space-y-1">
+                        <p className="font-medium text-foreground">{format(s.date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}</p>
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">{j?.name}</span>
+                          <span className="text-muted-foreground">{j && formatTimeSlot(j.timeSlot)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <>
+              <div className="flex items-start gap-4">
+                <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
+                <div>
+                  <p className="font-medium text-foreground">
+                    {booking.date && format(booking.date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}
+                  </p>
+                  <p className="text-sm text-muted-foreground">{jornada?.name}</p>
+                </div>
+              </div>
 
-          <div className="flex items-start gap-4">
-            <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
-            <div>
-              <p className="font-medium text-foreground">
-                {jornada && formatTimeSlot(jornada.timeSlot)}
-              </p>
-            </div>
-          </div>
+              <div className="flex items-start gap-4">
+                <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
+                <div>
+                  <p className="font-medium text-foreground">
+                    {jornada && formatTimeSlot(jornada.timeSlot)}
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Extras */}
           {(decoration || pack || booking.extras.personasExtra > 0 || booking.seguroCancelacion) && (

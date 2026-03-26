@@ -43,6 +43,7 @@ const initialBookingData: BookingData = {
   date: null,
   jornada: null,
   jornadaPrice: null,
+  selections: [],
   comments: "",
   extras: {
     decoracion: null,
@@ -94,11 +95,22 @@ const getInitialBookingData = (): BookingData => {
     }
   }
 
+  let initialSelections: import("@/lib/bookingConfig").BookingSelection[] = [];
+  if (parsedDate && parsedJornada && roomParam) {
+    const { getRoomById } = require("@/lib/bookingConfig");
+    const roomObj = getRoomById(roomParam);
+    const jConfig = roomObj?.jornadas.find((x: any) => x.id === parsedJornada);
+    if (jConfig) {
+      initialSelections = [{ date: parsedDate, jornada: parsedJornada, price: jConfig.price }];
+    }
+  }
+
   return {
     ...initialBookingData,
     room: roomParam,
     date: parsedDate,
-    jornada: parsedJornada
+    jornada: parsedJornada,
+    selections: initialSelections
   };
 };
 
@@ -135,7 +147,7 @@ export function BookingWizard() {
   }, []);
 
   const handleRoomChange = (room: RoomId) => {
-    setBooking({ ...booking, room, jornada: null, extras: { ...booking.extras, personasExtra: 0 } });
+    setBooking({ ...booking, room, jornada: null, date: null, selections: [], extras: { ...booking.extras, personasExtra: 0 } });
   };
 
   const handleDateChange = (date: Date | null) => {
@@ -153,6 +165,45 @@ export function BookingWizard() {
         personasExtra: shouldResetPersonas ? 0 : booking.extras.personasExtra
       }
     });
+  };
+
+  const handleAddSelection = (date: Date, jornada: JornadaType, price: number) => {
+    const newSelections = [...booking.selections, { date, jornada, price }];
+    const first = newSelections[0];
+    
+    // Check if we need to reset personas (only valid for "atico" in "dia")
+    const canStillHavePersonas = newSelections.some(s => s.jornada === "dia") && booking.room === "atico";
+
+    setBooking(prev => ({
+      ...prev,
+      selections: newSelections,
+      date: first.date,
+      jornada: first.jornada,
+      jornadaPrice: first.price,
+      extras: {
+        ...prev.extras,
+        personasExtra: canStillHavePersonas ? prev.extras.personasExtra : 0
+      }
+    }));
+  };
+
+  const handleRemoveSelection = (index: number) => {
+    const newSelections = booking.selections.filter((_, i) => i !== index);
+    const first = newSelections[0] || { date: null, jornada: null, price: null };
+    
+    const canStillHavePersonas = newSelections.some(s => s.jornada === "dia") && booking.room === "atico";
+
+    setBooking(prev => ({
+      ...prev,
+      selections: newSelections,
+      date: first.date || null,
+      jornada: first.jornada || null,
+      jornadaPrice: first.price !== undefined ? first.price : null,
+      extras: {
+        ...prev.extras,
+        personasExtra: canStillHavePersonas ? prev.extras.personasExtra : 0
+      }
+    }));
   };
 
   const handleDecoracionChange = (decoracion: DecorationType | null) => {
@@ -234,7 +285,7 @@ export function BookingWizard() {
     setCurrentStep(7);
   };
 
-  const showPriceSummary = currentStep >= 1 && currentStep <= 4 && booking.room && booking.jornada;
+  const showPriceSummary = currentStep >= 1 && currentStep <= 4 && booking.room && (booking.selections.length > 0 || booking.jornada);
 
   return (
     <div className="min-h-screen bg-background">
@@ -276,16 +327,15 @@ export function BookingWizard() {
           {currentStep === 1 && (
             <StepSearch
               selectedRoom={booking.room}
-              selectedDate={booking.date}
-              selectedJornada={booking.jornada}
+              selections={booking.selections}
               onRoomChange={handleRoomChange}
-              onDateChange={handleDateChange}
-              onJornadaChange={handleJornadaChange}
+              onAddSelection={handleAddSelection}
+              onRemoveSelection={handleRemoveSelection}
               onNext={() => setCurrentStep(2)}
             />
           )}
 
-          {currentStep === 2 && booking.room && booking.jornada && (
+          {currentStep === 2 && booking.room && (booking.selections.length > 0 || booking.jornada) && (
             <StepExtras
               selectedRoom={booking.room}
               selectedJornada={booking.jornada}

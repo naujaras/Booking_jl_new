@@ -23,16 +23,16 @@ import {
   AvailabilityResult,
   JornadaPrices,
   getRoomById,
-  formatTimeSlot
+  formatTimeSlot,
+  BookingSelection
 } from "@/lib/bookingConfig";
 
 interface StepSearchProps {
   selectedRoom: RoomId | null;
-  selectedDate: Date | null;
-  selectedJornada: JornadaType | null;
+  selections: BookingSelection[];
   onRoomChange: (room: RoomId) => void;
-  onDateChange: (date: Date | null) => void;
-  onJornadaChange: (jornada: JornadaType, price?: number) => void;
+  onAddSelection: (date: Date, jornada: JornadaType, price: number) => void;
+  onRemoveSelection: (index: number) => void;
   onNext: () => void;
 }
 
@@ -40,13 +40,13 @@ interface StepSearchProps {
 
 export function StepSearch({
   selectedRoom,
-  selectedDate,
-  selectedJornada,
+  selections,
   onRoomChange,
-  onDateChange,
-  onJornadaChange,
+  onAddSelection,
+  onRemoveSelection,
   onNext
 }: StepSearchProps) {
+  const [currentSearchDate, setCurrentSearchDate] = useState<Date | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const [availabilityResult, setAvailabilityResult] = useState<AvailabilityResult | null>(null);
   const [jornadaPrices, setJornadaPrices] = useState<JornadaPrices | null>(null);
@@ -54,7 +54,7 @@ export function StepSearch({
 
   useEffect(() => {
     async function checkDateAndPrices() {
-      if (selectedRoom && selectedDate) {
+      if (selectedRoom && currentSearchDate) {
         setIsChecking(true);
         setAvailabilityResult(null);
         setJornadaPrices(null);
@@ -62,8 +62,8 @@ export function StepSearch({
         try {
           // Consultar disponibilidad y precios en paralelo
           const [availabilityData, pricesData] = await Promise.all([
-            checkAvailability(selectedDate, selectedRoom),
-            fetchJornadaPrices(selectedDate, selectedRoom)
+            checkAvailability(currentSearchDate, selectedRoom),
+            fetchJornadaPrices(currentSearchDate, selectedRoom)
           ]);
 
           setAvailabilityResult(availabilityData);
@@ -83,7 +83,7 @@ export function StepSearch({
       }
     }
     checkDateAndPrices();
-  }, [selectedRoom, selectedDate]);
+  }, [selectedRoom, currentSearchDate]);
 
   // Obtener las jornadas del room actual para mostrar en el popup
   // Filtrar por disponibilidad (GCal) Y por tener precio (Excel)
@@ -97,14 +97,14 @@ export function StepSearch({
     : [];
 
   const hasAvailableJornadas = availableJornadasConfig.length > 0;
-  const canProceed = selectedRoom && selectedDate && selectedJornada && hasAvailableJornadas;
+  const canProceed = selections.length > 0;
 
-  // Abrir diálogo automáticamente cuando hay resultados válidos
+  // Abrir diálogo automáticamente cuando hay resultados válidos Y es sobre la fecha actual que buscan (no una ya pasada)
   useEffect(() => {
-    if (hasAvailableJornadas && !selectedJornada && !isChecking) {
+    if (hasAvailableJornadas && currentSearchDate && !isChecking) {
       setShowJornadaDialog(true);
     }
-  }, [hasAvailableJornadas, selectedJornada, isChecking]);
+  }, [hasAvailableJornadas, currentSearchDate, isChecking]);
 
   // Obtener precio de una jornada (dinámico o estático como fallback)
   const getJornadaPrice = (jornadaId: JornadaType): number => {
@@ -116,8 +116,11 @@ export function StepSearch({
 
   const handleJornadaSelect = (jornadaId: JornadaType) => {
     const price = getJornadaPrice(jornadaId);
-    onJornadaChange(jornadaId, price);
+    if (currentSearchDate) {
+      onAddSelection(currentSearchDate, jornadaId, price);
+    }
     setShowJornadaDialog(false);
+    setCurrentSearchDate(null);
   };
 
   const handleOpenJornadaDialog = () => {
@@ -194,12 +197,12 @@ export function StepSearch({
               variant="outline"
               className={cn(
                 "w-full justify-start text-left font-normal h-14",
-                !selectedDate && "text-muted-foreground"
+                !currentSearchDate && "text-muted-foreground"
               )}
             >
               <CalendarIcon className="mr-3 h-5 w-5" />
-              {selectedDate ? (
-                format(selectedDate, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })
+              {currentSearchDate ? (
+                format(currentSearchDate, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })
               ) : (
                 <span>Selecciona una fecha</span>
               )}
@@ -208,8 +211,8 @@ export function StepSearch({
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar
               mode="single"
-              selected={selectedDate || undefined}
-              onSelect={(date) => onDateChange(date || null)}
+              selected={currentSearchDate || undefined}
+              onSelect={(date) => setCurrentSearchDate(date || null)}
               disabled={(date) => date < startOfToday()}
               initialFocus
               className="pointer-events-auto"
@@ -218,7 +221,7 @@ export function StepSearch({
         </Popover>
 
         {/* Availability Status */}
-        {selectedRoom && selectedDate && (
+        {selectedRoom && currentSearchDate && (
           <div className={cn(
             "flex items-center gap-2 p-3 rounded-lg text-sm",
             isChecking && "bg-muted text-muted-foreground",
@@ -251,24 +254,42 @@ export function StepSearch({
           </div>
         )}
 
-        {/* Selected Jornada Display */}
-        {selectedJornada && currentRoom && (
-          <div
-            onClick={handleOpenJornadaDialog}
-            className="flex items-center justify-between p-4 rounded-lg border-2 border-primary bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <Clock className="h-5 w-5 text-primary" />
-              <div>
-                <p className="font-medium text-foreground">
-                  {currentRoom.jornadas.find(j => j.id === selectedJornada)?.name}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {formatTimeSlot(currentRoom.jornadas.find(j => j.id === selectedJornada)!.timeSlot)}
-                </p>
-              </div>
+        {/* Selected Jornadas */}
+        {selections.length > 0 && currentRoom && (
+          <div className="space-y-4 pt-4 border-t border-border mt-6">
+            <label className="text-sm font-medium text-foreground">Tu estancia configurada</label>
+            <div className="space-y-3">
+              {selections.map((selection, index) => {
+                const jornadaConfig = currentRoom.jornadas.find(j => j.id === selection.jornada);
+                return (
+                  <div
+                    key={index}
+                    className="flex flex-col sm:flex-row items-center justify-between p-4 rounded-lg border-2 border-primary bg-primary/5 hover:bg-primary/10 transition-colors gap-4 shadow-sm"
+                  >
+                    <div className="flex items-center gap-3 self-start sm:self-auto min-w-[200px]">
+                      <Clock className="h-5 w-5 text-primary" />
+                      <div>
+                        <p className="font-medium text-foreground">
+                          {jornadaConfig?.name}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {format(selection.date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}
+                        </p>
+                        <p className="text-sm text-muted-foreground font-medium">
+                          {jornadaConfig && formatTimeSlot(jornadaConfig.timeSlot)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-6 self-end sm:self-auto">
+                      <span className="font-bold text-lg text-primary">{selection.price}€</span>
+                      <Button variant="ghost" size="sm" onClick={() => onRemoveSelection(index)} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                        Quitar
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <Button variant="ghost" size="sm">Cambiar</Button>
           </div>
         )}
       </div>
@@ -289,22 +310,20 @@ export function StepSearch({
           <DialogHeader>
             <DialogTitle>Selecciona tu jornada</DialogTitle>
             <DialogDescription>
-              {currentRoom?.name} - {selectedDate && format(selectedDate, "EEEE, d 'de' MMMM", { locale: es })}
+              {currentRoom?.name} - {currentSearchDate && format(currentSearchDate, "EEEE, d 'de' MMMM", { locale: es })}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 py-4">
             {availableJornadasConfig.map((jornada) => {
               const price = getJornadaPrice(jornada.id);
+              // Avoid showing the selected effect here, as it's an additive dialog
               return (
                 <button
                   key={jornada.id}
                   onClick={() => handleJornadaSelect(jornada.id)}
                   className={cn(
                     "flex items-center justify-between p-4 rounded-lg border-2 transition-all text-left",
-                    "hover:border-primary/50 hover:bg-primary/5",
-                    selectedJornada === jornada.id
-                      ? "border-primary bg-primary/5"
-                      : "border-border"
+                    "hover:border-primary border-border bg-card shadow-sm hover:shadow"
                   )}
                 >
                   <div className="flex items-center gap-3">

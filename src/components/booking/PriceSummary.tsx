@@ -7,7 +7,8 @@ import {
   DECORATIONS,
   PACKS,
   PERSONA_EXTRA_PRICE,
-  canAddPersonasExtra
+  canAddPersonasExtra,
+  RoomId
 } from "@/lib/bookingConfig";
 
 interface PriceSummaryProps {
@@ -19,14 +20,14 @@ export function PriceSummary({ booking }: PriceSummaryProps) {
   const jornada = booking.room && booking.jornada ? getJornadaForRoom(booking.room, booking.jornada) : null;
   const decoration = booking.extras.decoracion ? DECORATIONS.find(d => d.id === booking.extras.decoracion) : null;
   const pack = booking.extras.pack ? PACKS.find(p => p.id === booking.extras.pack) : null;
-  const showPersonasExtra = canAddPersonasExtra(booking.room, booking.jornada) && booking.extras.personasExtra > 0;
+  const showPersonasExtra = canAddPersonasExtra(booking.room, booking.jornada, booking.selections) && booking.extras.personasExtra > 0;
   const totalPrice = calculateTotalPrice(booking);
   const insurancePrice = calculateInsurancePrice(booking);
 
   // Usar precio dinámico si existe, sino el estático
   const jornadaPrice = booking.jornadaPrice ?? jornada?.price ?? 0;
 
-  if (!room || !jornada) return null;
+  if (!room || (booking.selections.length === 0 && !jornada)) return null;
 
   return (
     <div className="bg-card border border-border rounded-xl p-4 shadow-lg">
