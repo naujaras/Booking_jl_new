@@ -13,12 +13,22 @@ import {
 
 const N8N_BOOKING_REGISTRO_WEBHOOK = "https://n8n-n8n.npfusf.easypanel.host/webhook/c1000a02-ce51-4e58-8ce9-e9db283b9d1a";
 
-// Función auxiliar para formatear fecha y hora en ISO sin offset forzado para que n8n asuma su zona local
+// Calcular dinámicamente si España está en +01:00 (Invierno) o +02:00 (Verano)
+function getMadridOffset(date: Date): string {
+  const options = { timeZone: 'Europe/Madrid', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric' } as any;
+  const strMadrid = date.toLocaleString('en-US', options);
+  const strUTC = date.toLocaleString('en-US', { ...options, timeZone: 'UTC' });
+  const diffHours = Math.round((new Date(strMadrid).getTime() - new Date(strUTC).getTime()) / 3600000);
+  return `+0${diffHours}:00`;
+}
+
+// Función auxiliar para formatear fecha y hora en ISO siempre anclado a la zona horaria española
 function formatDateTimeISO(date: Date, time: string): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}T${time}:00`;
+  const offset = getMadridOffset(date);
+  return `${year}-${month}-${day}T${time}:00.000${offset}`;
 }
 
 interface StepFinalConfirmationProps {
