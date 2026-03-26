@@ -55,11 +55,18 @@ export interface ClientData {
   telefono: string;
 }
 
+export interface BookingSelection {
+  date: Date;
+  jornada: JornadaType;
+  price: number;
+}
+
 export interface BookingData {
   room: RoomId | null;
   date: Date | null;
   jornada: JornadaType | null;
   jornadaPrice: number | null; // Precio dinámico de la jornada
+  selections: BookingSelection[];
   comments?: string;
   commentFields?: {
     generales: string;
@@ -212,8 +219,12 @@ export const PERSONA_EXTRA_PRICE = 10;
 export const MAX_PERSONAS_EXTRA = 2;
 export const INSURANCE_PERCENTAGE = 0.05;
 
-export function canAddPersonasExtra(roomId: RoomId | null, jornada: JornadaType | null): boolean {
-  return roomId === "atico" && jornada === "dia";
+export function canAddPersonasExtra(roomId: RoomId | null, jornada: JornadaType | null, selections?: BookingSelection[]): boolean {
+  if (roomId !== "atico") return false;
+  if (selections && selections.length > 0) {
+    return selections.some(s => s.jornada === "dia");
+  }
+  return jornada === "dia";
 }
 
 export function getRoomById(id: RoomId): RoomConfig | undefined {
@@ -228,8 +239,10 @@ export function getJornadaForRoom(roomId: RoomId, jornadaId: JornadaType): Jorna
 export function calculateTotalPrice(booking: BookingData): number {
   let total = 0;
 
-  // Precio de la jornada (dinámico si existe, sino estático)
-  if (booking.room && booking.jornada) {
+  // Precio de los tramos (dinámico)
+  if (booking.selections && booking.selections.length > 0) {
+    total += booking.selections.reduce((sum, s) => sum + s.price, 0);
+  } else if (booking.room && booking.jornada) {
     if (booking.jornadaPrice !== null && booking.jornadaPrice !== undefined) {
       total += booking.jornadaPrice;
     } else {
@@ -263,7 +276,9 @@ export function calculateTotalPrice(booking: BookingData): number {
 export function calculateInsurancePrice(booking: BookingData): number {
   let baseTotal = 0;
 
-  if (booking.room && booking.jornada) {
+  if (booking.selections && booking.selections.length > 0) {
+    baseTotal += booking.selections.reduce((sum, s) => sum + s.price, 0);
+  } else if (booking.room && booking.jornada) {
     if (booking.jornadaPrice !== null && booking.jornadaPrice !== undefined) {
       baseTotal += booking.jornadaPrice;
     } else {
@@ -490,15 +505,38 @@ function getAvailableJornadas(events: CalendarEvent[], roomId: RoomId, date: Dat
 export async function createBooking(booking: BookingData): Promise<{ success: boolean; message: string; bookingId?: string; contractUrl?: string; paymentUrl?: string }> {
   try {
     const room = getRoomById(booking.room!);
-    const jornada = getJornadaForRoom(booking.room!, booking.jornada!);
     const email = getEffectiveEmail(booking.clientData.email);
 
-    let fechaEntrada = "", fechaSalida = "";
-    if (booking.date && jornada) {
-      fechaEntrada = `${format(booking.date, "yyyy-MM-dd")} ${jornada.timeSlot.start}`;
+    let fechaEntrada = "", fechaSalida = "", jornadaNameStr = "";
+    const primaryJornada = booking.selections?.[0]?.jornada || booking.jornada;
+
+    if (booking.selections && booking.selections.length > 0) {
+      // Ordenar por fecha por precaución
+      const sorted = [...booking.selections].sort((a, b) => a.date.getTime() - b.date.getTime());
+      
+      const firstS = sorted[0];
+      const lastS = sorted[sorted.length - 1];
+      
+      const firstJ = getJornadaForRoom(booking.room!, firstS.jornada);
+      const lastJ = getJornadaForRoom(booking.room!, lastS.jornada);
+      
+      fechaEntrada = `${format(firstS.date, "yyyy-MM-dd")} ${firstJ?.timeSlot.start || ''}`;
+      
+      const exitDate = new Date(lastS.date);
+      if (lastJ?.timeSlot.nextDay) exitDate.setDate(exitDate.getDate() + 1);
+      fechaSalida = `${format(exitDate, "yyyy-MM-dd")} ${lastJ?.timeSlot.end || ''}`;
+      
+      jornadaNameStr = sorted.map(s => {
+        const j = getJornadaForRoom(booking.room!, s.jornada);
+        return `${j?.name} (${format(s.date, "dd/MM")})`;
+      }).join(" + ");
+    } else if (booking.date) {
+      const jornada = getJornadaForRoom(booking.room!, booking.jornada!);
+      fechaEntrada = `${format(booking.date, "yyyy-MM-dd")} ${jornada?.timeSlot.start}`;
       const exitDate = new Date(booking.date);
-      if (jornada.timeSlot.nextDay) exitDate.setDate(exitDate.getDate() + 1);
-      fechaSalida = `${format(exitDate, "yyyy-MM-dd")} ${jornada.timeSlot.end}`;
+      if (jornada?.timeSlot.nextDay) exitDate.setDate(exitDate.getDate() + 1);
+      fechaSalida = `${format(exitDate, "yyyy-MM-dd")} ${jornada?.timeSlot.end}`;
+      if (jornada) jornadaNameStr = jornada.name;
     }
 
     const response = await fetch(N8N_BOOKING_WEBHOOK_URL, {
@@ -507,9 +545,9 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
       body: JSON.stringify({
         room_name: room?.name,
         room_id: booking.room,
-        date: booking.date ? format(booking.date, "yyyy-MM-dd") : null,
-        jornada_name: jornada?.name,
-        jornada_id: booking.jornada,
+        date: booking.selections?.[0]?.date ? format(booking.selections[0].date, "yyyy-MM-dd") : (booking.date ? format(booking.date, "yyyy-MM-dd") : null),
+        jornada_name: jornadaNameStr,
+        jornada_id: primaryJornada,
         fecha_entrada: fechaEntrada,
         fecha_salida: fechaSalida,
         arrendador_nombre: booking.clientData.arrendadorNombre,
@@ -556,16 +594,25 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
       const nombreAcomp = encodeURIComponent(booking.clientData.acompananteNombre || '');
       const dniAcomp = encodeURIComponent(booking.clientData.acompananteDni || '');
       const numPersonas = (booking.clientData.acompananteNombre ? 2 : 1) + booking.extras.personasExtra;
-      const servicios = encodeURIComponent(`${room?.name} (${jornada?.name})`);
+      const servicios = encodeURIComponent(`${room?.name} (${jornadaNameStr})`);
 
       let dia = "", mes = "", anio = "";
-      if (booking.date) {
-        dia = String(booking.date.getDate()).padStart(2, "0");
-        mes = String(booking.date.getMonth() + 1).padStart(2, "0");
-        anio = String(booking.date.getFullYear());
+      const baseDate = booking.selections && booking.selections.length > 0 ? booking.selections[0].date : booking.date;
+      if (baseDate) {
+        dia = String(baseDate.getDate()).padStart(2, "0");
+        mes = String(baseDate.getMonth() + 1).padStart(2, "0");
+        anio = String(baseDate.getFullYear());
       }
+      
+      const lastJornadaTime = booking.selections && booking.selections.length > 0 
+        ? getJornadaForRoom(booking.room!, booking.selections[booking.selections.length-1].jornada)?.timeSlot.end 
+        : getJornadaForRoom(booking.room!, booking.jornada!)?.timeSlot.end;
+      
+      const firstJornadaTime = booking.selections && booking.selections.length > 0
+        ? getJornadaForRoom(booking.room!, booking.selections[0].jornada)?.timeSlot.start
+        : getJornadaForRoom(booking.room!, booking.jornada!)?.timeSlot.start;
 
-      contractUrl = `https://docuseal.eu/d/NfUmr9QnzPYYsd?email=${emailEncoded}&nombre_arrendador=${nombre}&dni=${dni}&nombre_acompanante=${nombreAcomp}&dni_acompanante=${dniAcomp}&Servicios_contratados=${servicios}&N%C3%BAmero_de_personas_incluidas_en_la_reserva=${numPersonas}&fecha_entrada=${encodeURIComponent(fechaEntrada.split(" ")[0])}&hora_entrada=${encodeURIComponent(jornada?.timeSlot.start || '')}&fecha_salida=${encodeURIComponent(fechaSalida.split(" ")[0])}&hora_salida=${encodeURIComponent(jornada?.timeSlot.end || '')}&dia=${dia}&mes=${mes}&ano=${anio}`;
+      contractUrl = `https://docuseal.eu/d/NfUmr9QnzPYYsd?email=${emailEncoded}&nombre_arrendador=${nombre}&dni=${dni}&nombre_acompanante=${nombreAcomp}&dni_acompanante=${dniAcomp}&Servicios_contratados=${encodeURIComponent(jornadaNameStr)}&N%C3%BAmero_de_personas_incluidas_en_la_reserva=${numPersonas}&fecha_entrada=${encodeURIComponent(fechaEntrada.split(" ")[0])}&hora_entrada=${encodeURIComponent(firstJornadaTime || '')}&fecha_salida=${encodeURIComponent(fechaSalida.split(" ")[0])}&hora_salida=${encodeURIComponent(lastJornadaTime || '')}&dia=${dia}&mes=${mes}&ano=${anio}`;
     }
 
     const paymentUrl = Array.isArray(data) ? (data[0]?.paymentUrl || data[0]?.stripe_url || data[0]?.url) : (data?.paymentUrl || data?.stripe_url || data?.url);
