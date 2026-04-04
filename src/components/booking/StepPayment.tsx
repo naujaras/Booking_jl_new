@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { CreditCard, Smartphone, Building2, ChevronDown, ChevronUp, ExternalLink, Loader2, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, AlertTriangle, Shield, Info, Wallet, Landmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -10,7 +10,8 @@ import {
   calculateInsurancePrice,
   getRoomById,
   getJornadaForRoom,
-  getEffectiveEmail
+  getEffectiveEmail,
+  createBooking
 } from "@/lib/bookingConfig";
 
 const N8N_STRIPE_WEBHOOK = "https://n8n-n8n.1owldl.easypanel.host/webhook/6712f3f0-db51-4e53-8f97-7f9ce46d3119";
@@ -28,6 +29,7 @@ interface StepPaymentProps {
   onNext: () => void;
   onReset: () => void;
   onPendingVerification: () => void;
+  onBookingCreated?: (paymentUrl?: string, contractUrl?: string, bookingId?: string) => void;
 }
 
 type PaymentMethod = "card" | "bizum" | "transfer" | "cajero" | null;
@@ -39,8 +41,10 @@ interface PaymentStatusResponse {
   paid_at?: string;
 }
 
-export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerification }: StepPaymentProps) {
+export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerification, onBookingCreated }: StepPaymentProps) {
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(null);
+  const [initStage, setInitStage] = useState<"loading" | "ready" | "error">("loading");
+  const requestSentRef = useRef(false);
   const [expandedMethod, setExpandedMethod] = useState<PaymentMethod>("card");
   const [paymentState, setPaymentState] = useState<PaymentState>("selecting");
   const [stripeUrl, setStripeUrl] = useState<string | null>(null);
@@ -61,8 +65,43 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
   const room = booking.room ? getRoomById(booking.room) : null;
   const jornada = booking.room && booking.jornada ? getJornadaForRoom(booking.room, booking.jornada) : null;
 
-  // Generar concepto para Cajero
   const paymentConcept = `${room?.name || ''} - ${booking.date ? format(booking.date, "dd/MM/yyyy", { locale: es }) : ''} - ${jornada?.name || ''} - ${booking.clientData.arrendadorNombre}`;
+
+  // --- INICIO CREADO DE RESERVA ---
+  useEffect(() => {
+    // Si ya tenemos paymentUrl en booking, no la creamos de nuevo
+    if (booking.paymentUrl) {
+      setInitStage("ready");
+      return;
+    }
+
+    if (requestSentRef.current) return;
+    requestSentRef.current = true;
+
+    const generateBooking = async () => {
+      try {
+        const response = await createBooking(booking);
+
+        if (response.success) {
+          if (onBookingCreated) {
+            onBookingCreated(response.paymentUrl, response.contractUrl, response.bookingId);
+          }
+          setInitStage("ready");
+        } else {
+          setErrorMessage(response.message || "Error al solicitar el enlace de pago");
+          setInitStage("error");
+          setPaymentState("error");
+        }
+      } catch (error) {
+        setErrorMessage("Error de conexión. Por favor, inténtalo de nuevo.");
+        setInitStage("error");
+        setPaymentState("error");
+      }
+    };
+
+    generateBooking();
+  }, [booking, onBookingCreated]);
+  // --- FIN CREADO DE RESERVA ---
 
   const copyToClipboard = async (text: string, field: string) => {
     try {
@@ -183,6 +222,24 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
     setExpandedMethod(expandedMethod === method ? null : method);
   };
 
+  if (initStage === "loading") {
+    return (
+      <div className="space-y-8 text-center py-12">
+        <div className="mx-auto w-24 h-24 rounded-full flex items-center justify-center bg-primary/10">
+          <Loader2 className="h-12 w-12 text-primary animate-spin" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-serif font-semibold text-foreground">
+            Preparando opciones de pago...
+          </h2>
+          <p className="text-muted-foreground">
+            Buscando y activando tu pasarela de pago seguro.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (paymentState === "processing") {
     return (
       <div className="space-y-8 text-center py-12">
@@ -255,9 +312,9 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
 
         <Button
           onClick={onNext}
-          className="w-full h-14 text-lg font-medium"
+          className="w-full h-14 text-lg font-medium bg-green-600 hover:bg-green-700 text-white border-none shadow-md"
         >
-          Ver confirmación de reserva
+          Siguiente: Confirmar y Opción de Contrato
         </Button>
       </div>
     );
@@ -411,7 +468,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
   }
 
   // Estado: Esperando confirmación (Cajero Manual)
-  if ((paymentState === "waiting" || paymentState === "processing") && selectedMethod === "cajero") {
+  if (paymentState === "waiting" && selectedMethod === "cajero") {
     
     const validarSaldoCajero = async () => {
       setCajeroError("");
@@ -513,14 +570,10 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
         <div className="flex flex-col gap-3">
           <Button
             onClick={validarSaldoCajero}
-            disabled={!cajeroDni.trim() || paymentState === "processing"}
+            disabled={!cajeroDni.trim()}
             className="w-full h-14 text-lg font-bold bg-green-600 hover:bg-green-700 text-white shadow-md transition-all"
           >
-            {paymentState === "processing" ? (
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            ) : (
-              <Wallet className="mr-2 h-5 w-5" />
-            )}
+            <Wallet className="mr-2 h-5 w-5" />
             Consultar Saldo y Pagar
           </Button>
 

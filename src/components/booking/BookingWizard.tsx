@@ -16,7 +16,8 @@ import {
   DecorationType,
   PackType,
   ClientData,
-  DecorationDetails
+  DecorationDetails,
+  getRoomById
 } from "@/lib/bookingConfig";
 
 const STEPS = [
@@ -24,8 +25,8 @@ const STEPS = [
   { id: 2, name: "Extras" },
   { id: 3, name: "Datos" },
   { id: 4, name: "Resumen" },
-  { id: 5, name: "Contrato" },
-  { id: 6, name: "Pago" },
+  { id: 5, name: "Pago" },
+  { id: 6, name: "Contrato" },
   { id: 7, name: "Confirmación" }
 ];
 
@@ -97,7 +98,6 @@ const getInitialBookingData = (): BookingData => {
 
   let initialSelections: import("@/lib/bookingConfig").BookingSelection[] = [];
   if (parsedDate && parsedJornada && roomParam) {
-    const { getRoomById } = require("@/lib/bookingConfig");
     const roomObj = getRoomById(roomParam);
     const jConfig = roomObj?.jornadas.find((x: any) => x.id === parsedJornada);
     if (jConfig) {
@@ -373,24 +373,29 @@ export function BookingWizard() {
           )}
 
           {currentStep === 5 && (
-            <StepContractSigning
+            <StepPayment
               booking={booking}
               onBack={() => setCurrentStep(4)}
               onNext={() => setCurrentStep(6)}
               onReset={handleReset}
-              onBookingCreated={(paymentUrl) => {
-                if (paymentUrl) setBooking(prev => ({ ...prev, paymentUrl }));
+              onPendingVerification={handlePaymentPendingVerification}
+              onBookingCreated={(paymentUrl, contractUrl, bookingId) => {
+                setBooking(prev => ({ 
+                  ...prev, 
+                  ...(paymentUrl ? { paymentUrl } : {}),
+                  ...(contractUrl ? { contractUrl } : {}),
+                  ...(bookingId ? { bookingId } : {})
+                }));
               }}
             />
           )}
 
           {currentStep === 6 && (
-            <StepPayment
+            <StepContractSigning
               booking={booking}
               onBack={() => setCurrentStep(5)}
               onNext={() => setCurrentStep(7)}
               onReset={handleReset}
-              onPendingVerification={handlePaymentPendingVerification}
             />
           )}
 
