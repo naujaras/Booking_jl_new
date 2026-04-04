@@ -82,6 +82,8 @@ export interface BookingData {
   clientData: ClientData;
   seguroCancelacion: boolean;
   paymentUrl?: string;
+  contractUrl?: string;
+  bookingId?: string;
 }
 
 export const ROOMS: RoomConfig[] = [
