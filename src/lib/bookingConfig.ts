@@ -309,8 +309,8 @@ export function calculateInsurancePrice(booking: BookingData): number {
 }
 
 export function formatTimeSlot(timeSlot: TimeSlot): string {
-  const endLabel = timeSlot.nextDay ? " (día siguiente)" : "";
-  return `${timeSlot.start} - ${timeSlot.end}${endLabel}`;
+  const endLabel = timeSlot.nextDay ? " (día sig.)" : "";
+  return `Entrada: ${timeSlot.start} / Salida: ${timeSlot.end}${endLabel}`;
 }
 
 // Función auxiliar para formatear fecha en formato ISO local para n8n
