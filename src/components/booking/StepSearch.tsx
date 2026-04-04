@@ -92,7 +92,13 @@ export function StepSearch({
     ? currentRoom.jornadas.filter(j => {
         const isAvailable = availabilityResult?.availableJornadas.includes(j.id);
         const hasPrice = jornadaPrices && jornadaPrices[j.id] && jornadaPrices[j.id] > 0;
-        return isAvailable && hasPrice;
+        
+        // Prevent duplicate selection on the exact same date
+        const isAlreadySelected = selections.some(
+          s => s.jornada === j.id && currentSearchDate && format(s.date, "yyyy-MM-dd") === format(currentSearchDate, "yyyy-MM-dd")
+        );
+
+        return isAvailable && hasPrice && !isAlreadySelected;
       })
     : [];
 

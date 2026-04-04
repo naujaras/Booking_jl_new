@@ -488,12 +488,20 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
       setPaymentState("processing");
 
       try {
-        // --- WEBHOOK DE n8n PARA CONSULTAR SALDO ---
-        // Se espera que este webhook devuelva { "saldo": numero }
-        const resp = await fetch("https://n8n-n8n.npfusf.easypanel.host/webhook/saldo-cajero", {
+        // --- WEBHOOK DE n8n PARA DESCONTAR SALDO ---
+        // Se espera que n8n verifique el saldo, lo reste, y devuelva { "success": true }
+        const resp = await fetch("https://n8n-n8n.1owldl.easypanel.host/webhook/pagar-cajero", { // Cambia el dominio si es NPfusf
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ dni })
+          body: JSON.stringify({ 
+            dni: dni,
+            totalPrice: totalPrice,
+            email: userEmail,
+            room: room?.name,
+            jornada: jornada?.name,
+            date: booking.date ? format(booking.date, "yyyy-MM-dd") : null,
+            bookingId: booking.bookingId
+          })
         });
 
         if (!resp.ok) {
@@ -501,23 +509,18 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
         }
 
         const data = await resp.json();
-        
-        // Simulación temporal si el webhook devuelve error 404 porque no existe aún,
-        // esto evitará romper el flujo localmente, pero en Prod debe actuar según la respuesta real.
-        const saldoDisponible = parseFloat(data.saldo || "0"); 
 
-        if (saldoDisponible >= totalPrice) {
-          // TIENE SALDO -> CONTINUAMOS CON LA RESERVA
-          onPendingVerification();
+        if (data.success) {
+          // TIENE SALDO Y SE HA DESCONTADO -> LA RESERVA SE CONSIDERA PAGADA
+          setPaymentState("completed");
         } else {
-          // NO TIENE SALDO -> NO PUEDE CONTRATAR
+          // NO TIENE SALDO O HUBO UN ERROR EN N8N
           setPaymentState("waiting");
-          setCajeroError(`Saldo insuficiente. Su saldo actual es ${saldoDisponible}€ y necesita ${totalPrice}€. Regargue su monedero primero.`);
+          setCajeroError(data.message || "Saldo insuficiente para completar la reserva.");
         }
       } catch (err) {
         setPaymentState("waiting");
-        // Si el webhook no existe todavía, por seguridad vamos a bloquearlo.
-        setCajeroError("Error al contactar con el sistema de saldo. Por favor, asegúrese de que el webhook de n8n está activo.");
+        setCajeroError("Error al contactar con el sistema de saldo. Por favor, asegúrese de que el webhook 'pagar-cajero' está activo.");
       }
     };
 

@@ -1,3 +1,5 @@
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { 
   BookingData, 
   getRoomById, 
@@ -35,10 +37,27 @@ export function PriceSummary({ booking }: PriceSummaryProps) {
       
       <div className="space-y-2 text-sm">
         {/* Base Price */}
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">{room.name} - {jornada.name}</span>
-          <span className="font-medium">{jornadaPrice}€</span>
-        </div>
+        {/* Base Price */}
+        {booking.selections && booking.selections.length > 0 ? (
+          booking.selections.map((selection, idx) => {
+            const j = booking.room ? getJornadaForRoom(booking.room, selection.jornada) : null;
+            return (
+              <div key={idx} className="flex justify-between items-start pb-1">
+                <span className="text-muted-foreground flex-1">
+                  {room.name} - {j?.name} <span className="text-xs">({format(selection.date, "dd/MM", { locale: es })})</span>
+                </span>
+                <span className="font-medium whitespace-nowrap ml-4">{selection.price}€</span>
+              </div>
+            );
+          })
+        ) : (
+          jornada && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">{room.name} - {jornada.name}</span>
+              <span className="font-medium">{jornadaPrice}€</span>
+            </div>
+          )
+        )}
 
         {/* Decoration */}
         {decoration && (
