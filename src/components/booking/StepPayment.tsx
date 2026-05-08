@@ -282,7 +282,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
     );
   }
 
-  if (paymentState === "completed" && (selectedMethod === "card" || selectedMethod === "bizum" || selectedMethod === "transfer")) {
+  if (paymentState === "completed") {
     return (
       <div className="space-y-8">
         <div className="text-center space-y-2">
