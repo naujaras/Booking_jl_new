@@ -11,6 +11,23 @@ import {
   getEffectiveEmail
 } from "@/lib/bookingConfig";
 
+interface StepFinalConfirmationProps {
+  booking: BookingData;
+  onReset: () => void;
+  pendingVerification?: boolean;
+}
+
+type ConfirmationState = "sending" | "confirmed" | "error";
+
+export function StepFinalConfirmation({ booking, onReset, pendingVerification = false }: StepFinalConfirmationProps) {
+  const [confirmationState, setConfirmationState] = useState<ConfirmationState>("sending");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const totalPrice = calculateTotalPrice(booking);
+  const room = booking.room ? getRoomById(booking.room) : null;
+  const jornada = booking.room && booking.jornada ? getJornadaForRoom(booking.room, booking.jornada) : null;
+  const emailToSend = getEffectiveEmail(booking.clientData.email);
+
   // El envío del webhook ahora se hace en cuanto se completa el pago o se envía la verificación.
   // Ya no dependemos de que el usuario llegue a esta pantalla.
   useEffect(() => {
@@ -19,8 +36,6 @@ import {
       setConfirmationState("confirmed");
     }
   }, [pendingVerification]);
-
-
   // Estado: Verificación pendiente de pago (Bizum/Transferencia)
   if (pendingVerification) {
     return (
