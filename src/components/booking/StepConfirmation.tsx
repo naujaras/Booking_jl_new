@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar, Clock, MapPin, Users, Heart, Wine, ChevronDown, ChevronUp, ScrollText, FileSignature, AlertTriangle, Shield, CheckCircle2, ExternalLink } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, Heart, Wine, ChevronDown, ChevronUp, ScrollText, FileSignature, AlertTriangle, Shield, CheckCircle2, ExternalLink, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -459,8 +459,8 @@ export function StepConfirmation({
           disabled={!acceptedRules || !hasOpenedRules}
           className="flex-1 h-14 text-lg font-medium"
         >
-          <FileSignature className="mr-2 h-5 w-5" />
-          Continuar con la firma
+          <CreditCard className="mr-2 h-5 w-5" />
+          Proceder al pago
         </Button>
       </div>
     </div>

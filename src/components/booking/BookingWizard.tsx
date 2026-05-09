@@ -17,7 +17,8 @@ import {
   PackType,
   ClientData,
   DecorationDetails,
-  getRoomById
+  getRoomById,
+  sendFinalRegistroWebhook
 } from "@/lib/bookingConfig";
 
 const STEPS = [
@@ -274,9 +275,24 @@ export function BookingWizard() {
             ? "Ver Excel" // Simplificado, el calculo real lo hace n8n con el JSON de antes
             : "Revisar",
           // Identificador para cruzar los datos
-          id_cliente: booking.clientData.arrendadorDni
+          id_cliente: booking.clientData.arrendadorDni,
+          
+          // Campos extra necesarios para Confirmación y Calendario:
+          arrendadorNombre: booking.clientData.arrendadorNombre,
+          arrendadorDNI: booking.clientData.arrendadorDni,
+          acompananteNombre: booking.clientData.acompananteNombre,
+          telefono: booking.clientData.telefono,
+          room: booking.room,
+          roomId: booking.room,
+          decoracion: booking.extras.decoracion,
+          personasExtra: booking.extras.personasExtra,
+          comentarios: booking.comments
         })
       });
+
+      // Asegurarse de que toda la info se envía a Confirmación y Calendario
+      await sendFinalRegistroWebhook(booking, true);
+
     } catch (e) {
       console.error("Error avisando a n8n del pago manual", e);
     }

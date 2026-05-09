@@ -11,7 +11,8 @@ import {
   getRoomById,
   getJornadaForRoom,
   getEffectiveEmail,
-  createBooking
+  createBooking,
+  sendFinalRegistroWebhook
 } from "@/lib/bookingConfig";
 
 const N8N_STRIPE_WEBHOOK = "https://n8n-n8n.npfusf.easypanel.host/webhook/6712f3f0-db51-4e53-8f97-7f9ce46d3119";
@@ -66,6 +67,16 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
   const jornada = booking.room && booking.jornada ? getJornadaForRoom(booking.room, booking.jornada) : null;
 
   const paymentConcept = `${room?.name || ''} - ${booking.date ? format(booking.date, "dd/MM/yyyy", { locale: es }) : ''} - ${jornada?.name || ''} - ${booking.clientData.arrendadorNombre}`;
+
+  const webhookSentRef = useRef(false);
+
+  // Asegurarnos de enviar el webhook a n8n en el momento que se confirme el pago
+  useEffect(() => {
+    if (paymentState === "completed" && !webhookSentRef.current) {
+      webhookSentRef.current = true;
+      sendFinalRegistroWebhook(booking, false);
+    }
+  }, [paymentState, booking]);
 
   // --- INICIO CREADO DE RESERVA ---
   useEffect(() => {
@@ -498,9 +509,17 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
             totalPrice: totalPrice,
             email: userEmail,
             room: room?.name,
+            roomId: booking.room,
             jornada: jornada?.name,
             date: booking.date ? format(booking.date, "yyyy-MM-dd") : null,
-            bookingId: booking.bookingId
+            bookingId: booking.bookingId,
+            arrendadorNombre: booking.clientData.arrendadorNombre,
+            arrendadorDNI: booking.clientData.arrendadorDni,
+            acompananteNombre: booking.clientData.acompananteNombre,
+            telefono: booking.clientData.telefono,
+            decoracion: booking.extras.decoracion,
+            personasExtra: booking.extras.personasExtra,
+            comentarios: booking.comments
           })
         });
 
