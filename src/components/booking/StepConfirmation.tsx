@@ -470,9 +470,6 @@ NO SE PODRÁ POSPONER LA RESERVA SI FALTAN MENOS DE 48 HORAS para la reserva.`}<
               Es necesario abrir y leer la política de cancelación y las normas para continuar
             </p>
           )}
-          <p className="text-base text-red-600 font-bold">
-            La no lectura de las normas de uso supondrá no poder reclamar nada
-          </p>
         </div>
       </div>
 
