@@ -793,8 +793,8 @@ export async function sendFinalRegistroWebhook(booking: BookingData, pendingVeri
     telefono: booking.clientData.telefono,
 
     decoracion: booking.extras.decoracion 
-      ? (booking.extras.decoracionDetails 
-          ? `${booking.extras.decoracion} (${booking.extras.decoracionDetails})` 
+      ? (booking.extras.decoracionDetails && (booking.extras.decoracionDetails.iniciales || booking.extras.decoracionDetails.numero)
+          ? `${booking.extras.decoracion} (Inic: ${booking.extras.decoracionDetails.iniciales || '-'}, Num: ${booking.extras.decoracionDetails.numero || '-'})` 
           : booking.extras.decoracion) 
       : null,
     decoracionDetails: booking.extras.decoracionDetails,
