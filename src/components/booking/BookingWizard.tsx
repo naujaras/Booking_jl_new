@@ -259,50 +259,19 @@ export function BookingWizard() {
   };
 
   const handlePaymentPendingVerification = async () => {
-    // Lanzar un webhook a n8n para avisar a Juan de que revise el banco
     try {
-      const email = booking.clientData.email.trim() || "gestionchatbotnaujaras@gmail.com";
-      await fetch("https://n8n-n8n.npfusf.easypanel.host/webhook/aviso-pago-manual", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email,
-          nombre: booking.clientData.arrendadorNombre,
-          estancia: booking.room,
-          fecha: booking.date,
-          jornada: booking.jornada,
-          importe: booking.jornadaPrice && booking.extras
-            ? "Ver Excel" // Simplificado, el calculo real lo hace n8n con el JSON de antes
-            : "Revisar",
-          // Identificador para cruzar los datos
-          id_cliente: booking.clientData.arrendadorDni,
-          
-          // Campos extra necesarios para Confirmación y Calendario:
-          arrendadorNombre: booking.clientData.arrendadorNombre,
-          arrendadorDNI: booking.clientData.arrendadorDni,
-          acompananteNombre: booking.clientData.acompananteNombre,
-          telefono: booking.clientData.telefono,
-          room: booking.room,
-          roomId: booking.room,
-          decoracion: booking.extras.decoracion 
-            ? (booking.extras.decoracionDetails 
-                ? `${booking.extras.decoracion} (${booking.extras.decoracionDetails})` 
-                : booking.extras.decoracion) 
-            : null,
-          personasExtra: booking.extras.personasExtra,
-          comentarios: booking.comments
-        })
-      });
-
       // Asegurarse de que toda la info se envía a Confirmación y Calendario
+      // El webhook principal ya incluye la lógica para mandar el email de "Revisar Banco"
       await sendFinalRegistroWebhook(booking, true);
 
-    } catch (e) {
-      console.error("Error avisando a n8n del pago manual", e);
+      setPaymentPendingVerification(true);
+      setCurrentStep(7);
+    } catch (error) {
+      console.error("Error enviando webhook de registro pendiente:", error);
+      // Avanzamos de todas formas para no bloquear al usuario
+      setPaymentPendingVerification(true);
+      setCurrentStep(7);
     }
-    
-    setPaymentPendingVerification(true);
-    setCurrentStep(7);
   };
 
   const showPriceSummary = currentStep >= 1 && currentStep <= 4 && booking.room && (booking.selections.length > 0 || booking.jornada);
