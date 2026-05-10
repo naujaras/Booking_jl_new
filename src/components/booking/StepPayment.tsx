@@ -15,8 +15,8 @@ import {
   sendFinalRegistroWebhook
 } from "@/lib/bookingConfig";
 
-const N8N_STRIPE_WEBHOOK = "https://n8n-n8n.npfusf.easypanel.host/webhook/6712f3f0-db51-4e53-8f97-7f9ce46d3119";
-const N8N_PAYMENT_STATUS_WEBHOOK = "https://n8n-n8n.npfusf.easypanel.host/webhook/6218e434-d177-4bf9-8699-f03bddaa7983";
+const N8N_STRIPE_WEBHOOK = "/api/n8n/6712f3f0-db51-4e53-8f97-7f9ce46d3119";
+const N8N_PAYMENT_STATUS_WEBHOOK = "/api/n8n/6218e434-d177-4bf9-8699-f03bddaa7983";
 const BIZUM_PHONE = "679 96 82 09";
 const WHATSAPP_PHONE = "34677222166";
 const IBAN = "ES59 0182 6795 3702 0165 5693";
@@ -501,7 +501,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
       try {
         // --- WEBHOOK DE n8n PARA DESCONTAR SALDO ---
         // Se espera que n8n verifique el saldo, lo reste, y devuelva { "success": true }
-        const resp = await fetch("https://n8n-n8n.npfusf.easypanel.host/webhook/pagar-cajero", { // Cambiado a NPfusf
+        const resp = await fetch("/api/n8n/pagar-cajero", { // Cambiado a NPfusf
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ 
@@ -837,3 +837,4 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
     </div>
   );
 }
+

@@ -3,7 +3,7 @@ import { MessageCircle, X, Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-const CHATBOT_URL = "https://n8n-n8n.npfusf.easypanel.host/webhook/chatbot-hub";
+const CHATBOT_URL = "/api/n8n/chatbot-hub";
 
 interface Message {
   id: string;
@@ -201,3 +201,4 @@ export function Chatbot() {
     </>
   );
 }
+
