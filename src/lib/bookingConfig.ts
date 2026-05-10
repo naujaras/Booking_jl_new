@@ -766,6 +766,16 @@ export async function sendFinalRegistroWebhook(booking: BookingData, pendingVeri
       const j = getJornadaForRoom(room.id, sel.jornada);
       return `${format(new Date(sel.date), "dd/MM/yyyy")} (${j?.name})`;
     }).join(" + ");
+  } else if (booking.date && jornada) {
+    dateStart = formatDateTimeISO(new Date(booking.date), jornada.timeSlot.start);
+    const exitDate = new Date(booking.date);
+    if (jornada.timeSlot.nextDay) {
+      exitDate.setDate(exitDate.getDate() + 1);
+    }
+    const [exitHour, exitMin] = jornada.timeSlot.end.split(':').map(Number);
+    exitDate.setHours(exitHour, exitMin, 0, 0);
+    dateEnd = formatDateTimeISO(exitDate, jornada.timeSlot.end);
+    fechasCompletas = `${format(new Date(booking.date), "dd/MM/yyyy")} (${jornada.name})`;
   }
 
   const bookingData = {
