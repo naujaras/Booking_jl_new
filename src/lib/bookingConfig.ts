@@ -559,15 +559,15 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
         acompanante_nombre: booking.clientData.acompananteNombre,
         acompanante_dni: booking.clientData.acompananteDni,
         decoracion_name: booking.extras.decoracion 
-          ? (booking.extras.decoracionDetails 
-              ? `${booking.extras.decoracion} (${booking.extras.decoracionDetails})` 
+          ? (booking.extras.decoracionDetails && (booking.extras.decoracionDetails.iniciales || booking.extras.decoracionDetails.numero)
+              ? `${booking.extras.decoracion} (Inic: ${booking.extras.decoracionDetails.iniciales || '-'}, Num: ${booking.extras.decoracionDetails.numero || '-'})` 
               : booking.extras.decoracion) 
           : null,
         personas_extra: booking.extras.personasExtra,
         extras: {
           decoracion: booking.extras.decoracion 
-            ? (booking.extras.decoracionDetails 
-                ? `${booking.extras.decoracion} (${booking.extras.decoracionDetails})` 
+            ? (booking.extras.decoracionDetails && (booking.extras.decoracionDetails.iniciales || booking.extras.decoracionDetails.numero)
+                ? `${booking.extras.decoracion} (Inic: ${booking.extras.decoracionDetails.iniciales || '-'}, Num: ${booking.extras.decoracionDetails.numero || '-'})` 
                 : booking.extras.decoracion) 
             : null,
           decoracionDetails: booking.extras.decoracionDetails,
