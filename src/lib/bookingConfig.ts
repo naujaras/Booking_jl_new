@@ -5,10 +5,10 @@ import { format } from "date-fns";
 // ============================================
 
 // URLs de Webhooks de n8n (producción)
-export const N8N_WEBHOOK_URL = "https://n8n-n8n.npfusf.easypanel.host/webhook/a2e613d7-6690-47de-939d-9c479e95e24c";
-export const N8N_AVAILABILITY_URL = "https://n8n-n8n.npfusf.easypanel.host/webhook/disponibilidad";
-export const N8N_PRICES_WEBHOOK_URL = "https://n8n-n8n.npfusf.easypanel.host/webhook/854bd8ed-d900-4b55-a210-a08dac674651";
-export const N8N_BOOKING_WEBHOOK_URL = "https://n8n-n8n.npfusf.easypanel.host/webhook/reservar";
+export const N8N_WEBHOOK_URL = "/api/n8n/a2e613d7-6690-47de-939d-9c479e95e24c";
+export const N8N_AVAILABILITY_URL = "/api/n8n/disponibilidad";
+export const N8N_PRICES_WEBHOOK_URL = "/api/n8n/854bd8ed-d900-4b55-a210-a08dac674651";
+export const N8N_BOOKING_WEBHOOK_URL = "/api/n8n/reservar";
 
 // Tipos de datos
 export type RoomId = "atico" | "estudio" | "habitacion";
@@ -410,7 +410,7 @@ export async function checkAvailability(date: Date, roomId: RoomId): Promise<Ava
       date_end: `${dateTo}T23:59:59Z`
     };
 
-    const response = await fetch('https://n8n-n8n.npfusf.easypanel.host/webhook/b4920b99-1724-4169-8630-50b4b795911d', {
+    const response = await fetch('/api/n8n/b4920b99-1724-4169-8630-50b4b795911d', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -729,7 +729,7 @@ export function formatDateTimeISO(date: Date, time: string): string {
   return `${year}-${month}-${day}T${time}:00.000${offset}`;
 }
 
-const N8N_BOOKING_REGISTRO_WEBHOOK = "https://n8n-n8n.npfusf.easypanel.host/webhook/c1000a02-ce51-4e58-8ce9-e9db283b9d1a";
+const N8N_BOOKING_REGISTRO_WEBHOOK = "/api/n8n/c1000a02-ce51-4e58-8ce9-e9db283b9d1a";
 
 export async function sendFinalRegistroWebhook(booking: BookingData, pendingVerification: boolean = false) {
   const totalPrice = calculateTotalPrice(booking);
@@ -840,3 +840,4 @@ export async function sendFinalRegistroWebhook(booking: BookingData, pendingVeri
     return false;
   }
 }
+
