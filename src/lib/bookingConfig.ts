@@ -558,10 +558,18 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
         telefono: booking.clientData.telefono,
         acompanante_nombre: booking.clientData.acompananteNombre,
         acompanante_dni: booking.clientData.acompananteDni,
-        decoracion_name: booking.extras.decoracion,
+        decoracion_name: booking.extras.decoracion 
+          ? (booking.extras.decoracionDetails 
+              ? `${booking.extras.decoracion} (${booking.extras.decoracionDetails})` 
+              : booking.extras.decoracion) 
+          : null,
         personas_extra: booking.extras.personasExtra,
         extras: {
-          decoracion: booking.extras.decoracion,
+          decoracion: booking.extras.decoracion 
+            ? (booking.extras.decoracionDetails 
+                ? `${booking.extras.decoracion} (${booking.extras.decoracionDetails})` 
+                : booking.extras.decoracion) 
+            : null,
           decoracionDetails: booking.extras.decoracionDetails,
           pack: booking.extras.pack,
           personasExtra: booking.extras.personasExtra
@@ -784,7 +792,11 @@ export async function sendFinalRegistroWebhook(booking: BookingData, pendingVeri
     email: emailToSend,
     telefono: booking.clientData.telefono,
 
-    decoracion: booking.extras.decoracion,
+    decoracion: booking.extras.decoracion 
+      ? (booking.extras.decoracionDetails 
+          ? `${booking.extras.decoracion} (${booking.extras.decoracionDetails})` 
+          : booking.extras.decoracion) 
+      : null,
     decoracionDetails: booking.extras.decoracionDetails,
     pack: booking.extras.pack,
     personasExtra: booking.extras.personasExtra,
