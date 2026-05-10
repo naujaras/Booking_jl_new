@@ -84,7 +84,9 @@ export function StepConfirmation({
   onSeguroChange
 }: StepConfirmationProps) {
   const [showRules, setShowRules] = useState(false);
+  const [showPolicies, setShowPolicies] = useState(false);
   const [hasOpenedRules, setHasOpenedRules] = useState(false);
+  const [hasOpenedPolicies, setHasOpenedPolicies] = useState(false);
   const [acceptedRules, setAcceptedRules] = useState(false);
   const [showInsuranceInfo, setShowInsuranceInfo] = useState(false);
 
@@ -364,55 +366,108 @@ export function StepConfirmation({
         </p>
       </div>
 
-      {/* Normas de la Reserva */}
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <button
-          onClick={() =>
-            setShowRules((prev) => {
-              const next = !prev;
-              if (next) setHasOpenedRules(true);
-              return next;
-            })
-          }
-          className="w-full p-4 flex items-center justify-between text-left hover:bg-muted/50 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <ScrollText className="h-5 w-5 text-primary" />
-            <span className="font-medium text-foreground">Normas de la Reserva</span>
-          </div>
-          {showRules ? (
-            <ChevronUp className="h-5 w-5 text-muted-foreground" />
-          ) : (
-            <ChevronDown className="h-5 w-5 text-muted-foreground" />
-          )}
-        </button>
+      {/* Políticas y Normas */}
+      <div className="space-y-4">
+        {/* Política de Cancelación */}
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <button
+            onClick={() =>
+              setShowPolicies((prev) => {
+                const next = !prev;
+                if (next) setHasOpenedPolicies(true);
+                return next;
+              })
+            }
+            className="w-full p-4 flex items-center justify-between text-left hover:bg-muted/50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <ScrollText className="h-5 w-5 text-primary" />
+              <span className="font-medium text-foreground">Política de Cancelación</span>
+            </div>
+            {showPolicies ? (
+              <ChevronUp className="h-5 w-5 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="h-5 w-5 text-muted-foreground" />
+            )}
+          </button>
 
-        {showRules && (
-          <div className="p-4 pt-0 border-t border-border">
-            <div className="space-y-6 mt-4">
-              {RULE_SECTIONS.map((section) => (
-                <div key={section.title} className="space-y-3">
-                  <h4 className="text-base font-semibold text-foreground">{section.title}</h4>
+          {showPolicies && (
+            <div className="p-4 pt-0 border-t border-border">
+              <div className="space-y-6 mt-4">
+                <div className="space-y-3">
+                  <h4 className="text-base font-semibold text-foreground">Cambios y cancelaciones</h4>
                   <ul className="space-y-2">
-                    {section.rules.map((rule) => (
-                      <li key={rule.title} className="text-sm">
-                        <span className="font-medium text-foreground">{rule.title}:</span>{" "}
-                        <span className="text-muted-foreground whitespace-pre-line">{rule.description}</span>
-                      </li>
-                    ))}
+                    <li className="text-sm">
+                      <span className="text-muted-foreground whitespace-pre-line">{`CAMBIOS de FECHA o CANCELACIONES:
+
+Una vez formalizada la reserva, NO EXISTE LA POSIBILIDAD DE CANCELAR LA RESERVA y NO SE DEVOLVERÁ en ninguna circunstancia el importe abonado.
+
+No obstante, si tiene algún contratiempo EXISTE LA POSIBILIDAD DE POSPONER LA RESERVA.
+
+Si lo solicita con 7 DÍAS o más para la fecha de la reserva el cambio NO CONLLEVA NINGÚN COSTE para usted. Le guardarnos el dinero abonado hasta que elija otra fecha, con un tiempo máximo de 6 meses a contar desde la fecha de la solicitud.
+
+En caso de que quiera POSPONER LA RESERVA con menos de 7 días y hasta 48 horas antes del comienzo de su estancia, el cambio de fecha conlleva una penalización del 50 % del importe de la reserva. El otro 50 % se le guardará para cuando elija otra fecha, con un tiempo máximo de 6 meses a contar desde la fecha de la solicitud.
+
+NO SE PODRÁ POSPONER LA RESERVA SI FALTAN MENOS DE 48 HORAS para la reserva.`}</span>
+                    </li>
                   </ul>
                 </div>
-              ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
+        {/* Normas de la Reserva */}
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <button
+            onClick={() =>
+              setShowRules((prev) => {
+                const next = !prev;
+                if (next) setHasOpenedRules(true);
+                return next;
+              })
+            }
+            className="w-full p-4 flex items-center justify-between text-left hover:bg-muted/50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-primary" />
+              <span className="font-medium text-foreground">Normas de Comportamiento y Uso</span>
+            </div>
+            {showRules ? (
+              <ChevronUp className="h-5 w-5 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="h-5 w-5 text-muted-foreground" />
+            )}
+          </button>
+
+          {showRules && (
+            <div className="p-4 pt-0 border-t border-border">
+              <div className="space-y-6 mt-4">
+                {RULE_SECTIONS.filter(s => s.title !== "Política de cancelación").map((section) => (
+                  <div key={section.title} className="space-y-3">
+                    <h4 className="text-base font-semibold text-foreground">{section.title}</h4>
+                    <ul className="space-y-2">
+                      {section.rules.map((rule) => (
+                        <li key={rule.title} className="text-sm">
+                          <span className="font-medium text-foreground">{rule.title}:</span>{" "}
+                          <span className="text-muted-foreground whitespace-pre-line">{rule.description}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
       <div className="bg-white rounded-xl border border-red-500 overflow-hidden shadow-sm my-6 p-5">
         <div className="flex flex-col items-center text-center gap-3">
           <AlertTriangle className="h-10 w-10 text-red-600 flex-shrink-0" />
-          {!hasOpenedRules && (
+          {!(hasOpenedRules && hasOpenedPolicies) && (
             <p className="text-base text-red-600 font-bold">
-              Es necesario abrir y leer las normas para continuar
+              Es necesario abrir y leer la política de cancelación y las normas para continuar
             </p>
           )}
           <p className="text-base text-red-600 font-bold">
@@ -427,21 +482,14 @@ export function StepConfirmation({
           id="accept-rules"
           checked={acceptedRules}
           onCheckedChange={(checked) => setAcceptedRules(checked === true)}
+          disabled={!(hasOpenedRules && hasOpenedPolicies)}
           className="mt-0.5"
         />
         <label
           htmlFor="accept-rules"
           className="text-sm text-muted-foreground cursor-pointer leading-relaxed"
         >
-          He leído y acepto las{" "}
-          <button
-            type="button"
-            onClick={() => setShowRules(true)}
-            className="text-primary hover:underline font-medium"
-          >
-            normas de la reserva
-          </button>{" "}
-          y la política de cancelación
+          He leído y acepto la política de cancelación y las normas de la reserva
         </label>
       </div>
 
