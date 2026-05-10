@@ -130,10 +130,7 @@ export function StepClientData({
         </p>
       </div>
 
-      {/* Aviso Cajero */}
-      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4 text-sm text-amber-800 dark:text-amber-300">
-        <strong>Aviso sobre pagos en cajero:</strong> Si tienes pensado realizar el pago final mediante la opción "Ingreso en Cajero", es <strong>estrictamente necesario</strong> que tengas el saldo previamente ingresado en nuestro sistema. Si no tienes saldo, la reserva no podrá confirmarse. Consulta la opción "Ingresos en efectivo" disponible en la pantalla inicial (HUB) para más información.
-      </div>
+
 
       {/* Arrendador */}
       <div className="space-y-4">
@@ -289,6 +286,11 @@ export function StepClientData({
         >
           Continuar
         </Button>
+      </div>
+
+      {/* Aviso Cajero */}
+      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4 text-sm text-amber-800 dark:text-amber-300 mt-4">
+        <strong>Aviso sobre pagos en cajero:</strong> Si tienes pensado realizar el pago final mediante la opción "Ingreso en Cajero", es <strong>estrictamente necesario</strong> que tengas el saldo previamente ingresado en nuestro sistema. Si no tienes saldo, la reserva no podrá confirmarse. Consulta la opción "Ingresos en efectivo" disponible en la pantalla inicial (HUB) para más información.
       </div>
     </div>
   );

@@ -517,7 +517,11 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
             arrendadorDNI: booking.clientData.arrendadorDni,
             acompananteNombre: booking.clientData.acompananteNombre,
             telefono: booking.clientData.telefono,
-            decoracion: booking.extras.decoracion,
+            decoracion: booking.extras.decoracion 
+              ? (booking.extras.decoracionDetails 
+                  ? `${booking.extras.decoracion} (${booking.extras.decoracionDetails})` 
+                  : booking.extras.decoracion) 
+              : null,
             personasExtra: booking.extras.personasExtra,
             comentarios: booking.comments
           })

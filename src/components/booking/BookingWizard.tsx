@@ -284,7 +284,11 @@ export function BookingWizard() {
           telefono: booking.clientData.telefono,
           room: booking.room,
           roomId: booking.room,
-          decoracion: booking.extras.decoracion,
+          decoracion: booking.extras.decoracion 
+            ? (booking.extras.decoracionDetails 
+                ? `${booking.extras.decoracion} (${booking.extras.decoracionDetails})` 
+                : booking.extras.decoracion) 
+            : null,
           personasExtra: booking.extras.personasExtra,
           comentarios: booking.comments
         })
