@@ -259,10 +259,10 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
         </div>
         <div className="space-y-2">
           <h2 className="text-2xl font-serif font-semibold text-foreground">
-            Generando enlace de pago...
+            {selectedMethod === "cajero" ? "Comprobando su saldo..." : "Generando enlace de pago..."}
           </h2>
           <p className="text-muted-foreground">
-            Por favor, espera mientras preparamos tu pago seguro
+            {selectedMethod === "cajero" ? "Por favor, espera mientras verificamos tu monedero" : "Por favor, espera mientras preparamos tu pago seguro"}
           </p>
         </div>
       </div>
