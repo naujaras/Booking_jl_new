@@ -630,7 +630,7 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
     return {
       success: true,
       message: 'El contrato ha sido generado.',
-      bookingId: data[0]?.id?.toString() || data?.id?.toString() || `NJ-${Date.now()}`,
+      bookingId: data[0]?.bookingId?.toString() || data?.bookingId?.toString() || data[0]?.id?.toString() || data?.id?.toString() || `NJ-${Date.now()}`,
       contractUrl,
       paymentUrl
     };
