@@ -1,14 +1,6 @@
-import { useState } from "react";
-import { FileSignature, ExternalLink, CheckCircle2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { FileSignature, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { BookingData } from "@/lib/bookingConfig";
 
 interface StepContractSigningProps {
@@ -19,23 +11,28 @@ interface StepContractSigningProps {
 }
 
 export function StepContractSigning({ booking, onNext }: StepContractSigningProps) {
-  const [showOpenDialog, setShowOpenDialog] = useState(false);
-  const [contractState, setContractState] = useState<"ready" | "opened">("ready");
+  const [contractState, setContractState] = useState<"opened" | "completed">("opened");
 
   const contractUrl = booking.contractUrl;
   const contractId = booking.bookingId;
 
-  const handleOpenContract = () => {
-    setShowOpenDialog(true);
-  };
+  useEffect(() => {
+    // Escuchar el evento postMessage que envía DocuSeal cuando se completa la firma
+    const handleMessage = (event: MessageEvent) => {
+      // Opcionalmente podrías validar el origen si conoces el dominio de DocuSeal
+      // if (event.origin !== "https://docuseal.co") return;
+      
+      // Docuseal suele enviar datos en event.data, a veces un objeto con type "completed" o similar
+      // Para ser seguros, si recibimos un evento que parezca de finalización
+      if (event.data === "completed" || event.data?.event === "completed" || event.data?.type === "completed" || event.data === 'signed' || event.data?.event === 'signed') {
+        console.log("Firma completada desde iframe:", event.data);
+        setContractState("completed");
+      }
+    };
 
-  const confirmOpenContract = () => {
-    if (contractUrl) {
-      window.open(contractUrl, '_blank');
-      setContractState("opened");
-    }
-    setShowOpenDialog(false);
-  };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
 
   return (
     <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
@@ -47,33 +44,34 @@ export function StepContractSigning({ booking, onNext }: StepContractSigningProp
           ¡Pago verificado!
         </h2>
         <p className="text-lg text-muted-foreground max-w-md mx-auto">
-          Para finalizar el proceso de manera oficial, es obligatorio digitalizar el contrato de arrendamiento.
+          Para finalizar el proceso de manera oficial, es obligatorio firmar el contrato a continuación.
         </p>
       </div>
 
-      <div className="bg-card border-2 border-primary rounded-xl p-6 text-center space-y-6 shadow-sm">
-        <div className="flex flex-col items-center justify-center gap-3">
-          <FileSignature className="h-10 w-10 text-primary" />
-          <h3 className="text-xl font-bold text-foreground">
-            Firma del Contrato
-          </h3>
-          <p className="text-sm text-muted-foreground px-4">
-            Abre el siguiente enlace y completa la firma de tu reserva de alojamiento. Una vez firmado, finaliza el proceso aquí.
-          </p>
-        </div>
-
-        <Button
-          onClick={handleOpenContract}
-          className="w-full h-14 text-lg font-medium shadow-md hover:scale-[1.02] transition-transform"
-        >
-          <ExternalLink className="mr-2 h-5 w-5" />
-          {contractState === "opened" ? "Volver a abrir contrato" : "Abrir y Firmar Contrato"}
-        </Button>
-        
-        {contractState === "opened" && (
-          <p className="text-sm text-amber-600 dark:text-amber-400 font-medium animate-pulse">
-            El contrato se ha abierto en otra pestaña. Vuelve aquí para finalizar cuando hayas terminado.
-          </p>
+      <div className="bg-card border-2 border-primary rounded-xl p-2 md:p-6 text-center space-y-6 shadow-sm overflow-hidden">
+        {contractState === "opened" ? (
+          <div className="w-full flex flex-col items-center">
+            {contractUrl ? (
+              <div className="w-full h-[600px] sm:h-[700px] rounded-lg overflow-hidden border border-border shadow-inner">
+                <iframe 
+                  src={contractUrl} 
+                  className="w-full h-full border-0" 
+                  title="Firma de Contrato DocuSeal"
+                  allow="camera; microphone; geolocation"
+                />
+              </div>
+            ) : (
+              <div className="p-8 text-red-500">Error: No se ha podido cargar el enlace del contrato.</div>
+            )}
+          </div>
+        ) : (
+          <div className="py-12 flex flex-col items-center justify-center space-y-4 animate-in fade-in zoom-in duration-500">
+             <div className="w-20 h-20 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+               <FileSignature className="h-10 w-10 text-green-600 dark:text-green-400" />
+             </div>
+             <h3 className="text-2xl font-bold text-foreground">¡Contrato firmado con éxito!</h3>
+             <p className="text-muted-foreground">Ya puedes finalizar tu reserva.</p>
+          </div>
         )}
       </div>
 
@@ -85,38 +83,20 @@ export function StepContractSigning({ booking, onNext }: StepContractSigningProp
         </div>
       )}
 
-      {/* Botones de finalización */}
-      {contractState === "opened" && (
-        <div className="space-y-3 pt-6 border-t border-border slide-in-from-bottom-4 animate-in">
-          <Button
-            onClick={onNext}
-            className="w-full h-14 text-lg font-bold bg-green-600 hover:bg-green-700 text-white shadow-lg"
-          >
-            <CheckCircle2 className="mr-2 h-5 w-5" />
-            Ya he firmado, Finalizar
-          </Button>
-        </div>
-      )}
-
-      <Dialog open={showOpenDialog} onOpenChange={setShowOpenDialog}>
-        <DialogContent>
-          <DialogHeader>
-             <DialogTitle>Abrir contrato digital</DialogTitle>
-             <DialogDescription>
-               Se abrirá una nueva pestaña segura en DocuSeal para rellenar tus datos y firmar el contrato. Por favor, no cierres esta ventana.
-             </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0 mt-4">
-             <Button variant="outline" onClick={() => setShowOpenDialog(false)}>
-               Cancelar
-             </Button>
-             <Button onClick={confirmOpenContract}>
-               <ExternalLink className="mr-2 h-4 w-4" />
-               Aceptar y Firmar
-             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Botones de finalización - Siempre visible en modo desarrollo/fallback o cuando se completa */}
+      <div className="space-y-3 pt-6 border-t border-border slide-in-from-bottom-4 animate-in">
+        <Button
+          onClick={onNext}
+          className={`w-full h-14 text-lg font-bold shadow-lg transition-all duration-300 ${
+            contractState === "completed" 
+              ? "bg-green-600 hover:bg-green-700 text-white scale-100 opacity-100" 
+              : "bg-secondary text-secondary-foreground opacity-50"
+          }`}
+        >
+          <CheckCircle2 className="mr-2 h-5 w-5" />
+          {contractState === "completed" ? "Finalizar Reserva" : "Ya he firmado (Continuar)"}
+        </Button>
+      </div>
     </div>
   );
 }
