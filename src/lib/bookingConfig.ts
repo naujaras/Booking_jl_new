@@ -8,7 +8,7 @@ import { format } from "date-fns";
 export const N8N_WEBHOOK_URL = "/api/n8n/a2e613d7-6690-47de-939d-9c479e95e24c";
 export const N8N_AVAILABILITY_URL = "/api/n8n/disponibilidad";
 export const N8N_PRICES_WEBHOOK_URL = "/api/n8n/854bd8ed-d900-4b55-a210-a08dac674651";
-export const N8N_BOOKING_WEBHOOK_URL = "https://n8n-n8n.npfusf.easypanel.host/webhook-test/reservar-test";
+export const N8N_BOOKING_WEBHOOK_URL = "https://n8n-n8n.npfusf.easypanel.host/webhook/reservar-test";
 
 // Tipos de datos
 export type RoomId = "atico" | "estudio" | "habitacion";
