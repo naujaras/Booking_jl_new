@@ -38,7 +38,7 @@ export function StepContractSigning({ booking, onNext }: StepContractSigningProp
               <div className="w-full h-[600px] sm:h-[700px] rounded-lg overflow-hidden border border-border shadow-inner">
                 <DocusealForm 
                   src={contractUrl}
-                  host="https://docuseal.eu"
+                  host="https://eu.docuseal.com"
                   onComplete={(data) => {
                     console.log("Firma completada de DocuSeal", data);
                     setContractState("completed");
