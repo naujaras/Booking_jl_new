@@ -625,7 +625,7 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
         ? getJornadaForRoom(booking.room!, booking.selections[0].jornada)?.timeSlot.start
         : getJornadaForRoom(booking.room!, booking.jornada!)?.timeSlot.start;
 
-      contractUrl = `https://docuseal.eu/d/NfUmr9QnzPYYsd?email=${emailEncoded}&nombre_arrendador=${nombre}&dni=${dni}&nombre_acompanante=${nombreAcomp}&dni_acompanante=${dniAcomp}&servicios_contratados=${encodeURIComponent(jornadaNameStr)}&numero_personas=${numPersonas}&fecha_entrada=${encodeURIComponent(fechaEntrada.split(" ")[0].split('-').reverse().join('/'))}&hora_entrada=${encodeURIComponent((firstJornadaTime || '').substring(0,5))}&fecha_salida=${encodeURIComponent(fechaSalida.split(" ")[0].split('-').reverse().join('/'))}&hora_salida=${encodeURIComponent((lastJornadaTime || '').substring(0,5))}`;
+      contractUrl = 'https://docuseal.eu/d/NfUmr9QnzPYYsd';
     }
 
     const paymentUrl = Array.isArray(data) ? (data[0]?.paymentUrl || data[0]?.stripe_url || data[0]?.url) : (data?.paymentUrl || data?.stripe_url || data?.url);
