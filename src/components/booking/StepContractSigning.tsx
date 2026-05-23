@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { FileSignature, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BookingData } from "@/lib/bookingConfig";
+import { DocusealForm } from '@docuseal/react';
 
 interface StepContractSigningProps {
   booking: BookingData;
@@ -15,24 +16,6 @@ export function StepContractSigning({ booking, onNext }: StepContractSigningProp
 
   const contractUrl = booking.contractUrl;
   const contractId = booking.bookingId;
-
-  useEffect(() => {
-    // Escuchar el evento postMessage que envía DocuSeal cuando se completa la firma
-    const handleMessage = (event: MessageEvent) => {
-      // Opcionalmente podrías validar el origen si conoces el dominio de DocuSeal
-      // if (event.origin !== "https://docuseal.co") return;
-      
-      // Docuseal suele enviar datos en event.data, a veces un objeto con type "completed" o similar
-      // Para ser seguros, si recibimos un evento que parezca de finalización
-      if (event.data === "completed" || event.data?.event === "completed" || event.data?.type === "completed" || event.data === 'signed' || event.data?.event === 'signed') {
-        console.log("Firma completada desde iframe:", event.data);
-        setContractState("completed");
-      }
-    };
-
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, []);
 
   return (
     <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
@@ -53,11 +36,12 @@ export function StepContractSigning({ booking, onNext }: StepContractSigningProp
           <div className="w-full flex flex-col items-center">
             {contractUrl ? (
               <div className="w-full h-[600px] sm:h-[700px] rounded-lg overflow-hidden border border-border shadow-inner">
-                <iframe 
+                <DocusealForm 
                   src={contractUrl} 
-                  className="w-full h-full border-0" 
-                  title="Firma de Contrato DocuSeal"
-                  allow="camera; microphone; geolocation"
+                  onComplete={(data) => {
+                    console.log("Firma completada de DocuSeal", data);
+                    setContractState("completed");
+                  }}
                 />
               </div>
             ) : (
