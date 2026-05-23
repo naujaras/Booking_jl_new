@@ -8,7 +8,7 @@ import { format } from "date-fns";
 export const N8N_WEBHOOK_URL = "/api/n8n/a2e613d7-6690-47de-939d-9c479e95e24c";
 export const N8N_AVAILABILITY_URL = "/api/n8n/disponibilidad";
 export const N8N_PRICES_WEBHOOK_URL = "/api/n8n/854bd8ed-d900-4b55-a210-a08dac674651";
-export const N8N_BOOKING_WEBHOOK_URL = "/api/n8n/reservar";
+export const N8N_BOOKING_WEBHOOK_URL = "https://n8n-n8n.npfusf.easypanel.host/webhook-test/reservar-test";
 
 // Tipos de datos
 export type RoomId = "atico" | "estudio" | "habitacion";
@@ -618,11 +618,14 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
         ? getJornadaForRoom(booking.room!, booking.selections[booking.selections.length-1].jornada)?.timeSlot.end 
         : getJornadaForRoom(booking.room!, booking.jornada!)?.timeSlot.end;
       
-      const firstJornadaTime = booking.selections && booking.selections.length > 0
+
+
+
+                const firstJornadaTime = booking.selections && booking.selections.length > 0
         ? getJornadaForRoom(booking.room!, booking.selections[0].jornada)?.timeSlot.start
         : getJornadaForRoom(booking.room!, booking.jornada!)?.timeSlot.start;
 
-      contractUrl = `https://docuseal.eu/d/NfUmr9QnzPYYsd?email=${emailEncoded}&nombre_arrendador=${nombre}&dni=${dni}&nombre_acompanante=${nombreAcomp}&dni_acompanante=${dniAcomp}&servicios_contratados=${encodeURIComponent(jornadaNameStr)}&numero_personas=${numPersonas}&fecha_entrada=${encodeURIComponent(fechaEntrada.split(" ")[0].split('-').reverse().join('/'))}&hora_entrada=${encodeURIComponent((firstJornadaTime || '').substring(0,5))}&fecha_salida=${encodeURIComponent(fechaSalida.split(" ")[0].split('-').reverse().join('/'))}&hora_salida=${encodeURIComponent((lastJornadaTime || '').substring(0,5))}`;
+      contractUrl = `https://eu.docuseal.com/d/NfUmr9QnzPYYsd?email=${emailEncoded}&nombre_arrendador=${nombre}&dni=${dni}&nombre_acompanante=${nombreAcomp}&dni_acompanante=${dniAcomp}&servicios_contratados=${encodeURIComponent(jornadaNameStr)}&numero_personas=${numPersonas}&fecha_entrada=${encodeURIComponent(fechaEntrada.split(" ")[0].split('-').reverse().join('/'))}&hora_entrada=${encodeURIComponent((firstJornadaTime || '').substring(0,5))}&fecha_salida=${encodeURIComponent(fechaSalida.split(" ")[0].split('-').reverse().join('/'))}&hora_salida=${encodeURIComponent((lastJornadaTime || '').substring(0,5))}`;
     }
 
     const paymentUrl = Array.isArray(data) ? (data[0]?.paymentUrl || data[0]?.stripe_url || data[0]?.url) : (data?.paymentUrl || data?.stripe_url || data?.url);
