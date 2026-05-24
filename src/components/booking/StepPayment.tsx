@@ -74,7 +74,8 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
   useEffect(() => {
     if (paymentState === "completed" && !webhookSentRef.current) {
       webhookSentRef.current = true;
-      sendFinalRegistroWebhook(booking, false);
+      const methodStr = selectedMethod === "cajero" ? "Ingreso en Cajero" : "stripe";
+      sendFinalRegistroWebhook(booking, false, methodStr);
     }
   }, [paymentState, booking]);
 
@@ -325,7 +326,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
           onClick={onNext}
           className="w-full h-14 text-lg font-medium bg-green-600 hover:bg-green-700 text-white border-none shadow-md"
         >
-          Siguiente: Confirmar y Opción de Contrato
+          Confirmar y firmar el contrato (obligatorio)
         </Button>
       </div>
     );

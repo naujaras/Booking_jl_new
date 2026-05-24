@@ -131,12 +131,12 @@ export function StepFinalConfirmation({ booking, onReset, pendingVerification = 
           </p>
         </div>
 
-        {/* Botón para volver al inicio */}
+        {/* Botón para volver al hub */}
         <Button
-          onClick={onReset}
+          onClick={() => window.location.href = "https://naujaras.com"}
           className="w-full h-14 text-lg font-medium"
         >
-          Entendido, volver al inicio
+          Entendido, volver a la web principal
         </Button>
       </div>
     );
@@ -308,13 +308,13 @@ export function StepFinalConfirmation({ booking, onReset, pendingVerification = 
         </p>
       </div>
 
-      {/* Botón para nueva reserva */}
+      {/* Botón para volver al hub */}
       <Button
-        onClick={onReset}
+        onClick={() => window.location.href = "https://naujaras.com"}
         variant="outline"
         className="w-full h-12"
       >
-        Realizar otra reserva
+        Volver a la web principal
       </Button>
     </div>
   );
