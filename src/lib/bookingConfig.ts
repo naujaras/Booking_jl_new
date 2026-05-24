@@ -499,8 +499,21 @@ function getAvailableJornadas(events: CalendarEvent[], roomId: RoomId, date: Dat
     });
 
     return !hasOverlap;
+  }).map(j => j.id);
+}
+
+// Función para crear la pre-reserva e iniciar el contrato
+export async function createBooking(booking: BookingData): Promise<{ success: boolean; message: string; bookingId?: string; contractUrl?: string; paymentUrl?: string }> {
+  try {
+    const room = getRoomById(booking.room!);
+    const email = getEffectiveEmail(booking.clientData.email);
+
+    let fechaEntrada = "", fechaSalida = "", jornadaNameStr = "";
+    const primaryJornada = booking.selections?.[0]?.jornada || booking.jornada;
+
+    if (booking.selections && booking.selections.length > 0) {
       // Ordenar por fecha por precaución
-      const sorted = [...booking.selections].sort((a, b) => a.date.getTime() - b.date.getTime());
+      const sorted = [...booking.selections].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       
       const firstS = sorted[0];
       const lastS = sorted[sorted.length - 1];
