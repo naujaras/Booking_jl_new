@@ -499,20 +499,6 @@ function getAvailableJornadas(events: CalendarEvent[], roomId: RoomId, date: Dat
     });
 
     return !hasOverlap;
-  }).map(j => j.id);
-}
-
-
-// Función para crear la pre-reserva e iniciar el contrato
-export async function createBooking(booking: BookingData): Promise<{ success: boolean; message: string; bookingId?: string; contractUrl?: string; paymentUrl?: string }> {
-  try {
-    const room = getRoomById(booking.room!);
-    const email = getEffectiveEmail(booking.clientData.email);
-
-    let fechaEntrada = "", fechaSalida = "", jornadaNameStr = "";
-    const primaryJornada = booking.selections?.[0]?.jornada || booking.jornada;
-
-    if (booking.selections && booking.selections.length > 0) {
       // Ordenar por fecha por precaución
       const sorted = [...booking.selections].sort((a, b) => a.date.getTime() - b.date.getTime());
       
@@ -723,7 +709,6 @@ export function getSpainOffset(dateStr: string): string {
   const isDST = d.getTime() >= dstStart.getTime() && d.getTime() < dstEnd.getTime();
   return isDST ? "+02:00" : "+01:00";
 }
-
 export function formatDateTimeISO(date: Date, time: string): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -734,7 +719,7 @@ export function formatDateTimeISO(date: Date, time: string): string {
 
 const N8N_BOOKING_REGISTRO_WEBHOOK = "/api/n8n/c1000a02-ce51-4e58-8ce9-e9db283b9d1a";
 
-export async function sendFinalRegistroWebhook(booking: BookingData, pendingVerification: boolean = false) {
+export async function sendFinalRegistroWebhook(booking: BookingData, pendingVerification: boolean = false, paymentMethodStr: string = "stripe") {
   const totalPrice = calculateTotalPrice(booking);
   const room = booking.room ? getRoomById(booking.room) : null;
   const jornada = booking.room && booking.jornada ? getJornadaForRoom(booking.room, booking.jornada) : null;
@@ -820,6 +805,72 @@ export async function sendFinalRegistroWebhook(booking: BookingData, pendingVeri
       booking.commentFields?.horaLlegada ? `HORA LLEGADA: ${booking.commentFields.horaLlegada}` : null,
       booking.commentFields?.pagoManual ? `PAGO MANUAL: ${booking.commentFields.pagoManual}` : null
     ].filter(Boolean).join("\n\n"),
+    const lastJornada = getJornadaForRoom(room.id, lastSel.jornada);
+    if (lastJornada) {
+      const exitDate = new Date(lastSel.date);
+      if (lastJornada.timeSlot.nextDay) {
+        exitDate.setDate(exitDate.getDate() + 1);
+      }
+      const [exitHour, exitMin] = lastJornada.timeSlot.end.split(':').map(Number);
+      exitDate.setHours(exitHour, exitMin, 0, 0);
+      dateEnd = formatDateTimeISO(exitDate, lastJornada.timeSlot.end);
+    }
+
+    fechasCompletas = sortedSelections.map(sel => {
+      const j = getJornadaForRoom(room.id, sel.jornada);
+      return `${format(new Date(sel.date), "dd/MM/yyyy")} (${j?.name})`;
+    }).join(" + ");
+  } else if (booking.date && jornada) {
+    dateStart = formatDateTimeISO(new Date(booking.date), jornada.timeSlot.start);
+    const exitDate = new Date(booking.date);
+    if (jornada.timeSlot.nextDay) {
+      exitDate.setDate(exitDate.getDate() + 1);
+    }
+    const [exitHour, exitMin] = jornada.timeSlot.end.split(':').map(Number);
+    exitDate.setHours(exitHour, exitMin, 0, 0);
+    dateEnd = formatDateTimeISO(exitDate, jornada.timeSlot.end);
+    fechasCompletas = `${format(new Date(booking.date), "dd/MM/yyyy")} (${jornada.name})`;
+  }
+
+  const bookingData = {
+    room: room?.name,
+    roomId: booking.room,
+    date: booking.date ? format(booking.date, "yyyy-MM-dd") : null,
+    dateFormatted: booking.date ? format(booking.date, "dd/MM/yyyy") : null,
+    jornada: jornada?.name,
+    jornadaId: booking.jornada,
+    horario: jornada ? `${jornada.timeSlot.start} - ${jornada.timeSlot.end}` : null,
+    date_start: dateStart,
+    date_end: dateEnd,
+    fechas_completas: fechasCompletas,
+    
+    fecha_entrada: dateStart ? dateStart.split('T')[0] : null,
+    hora_entrada: dateStart ? dateStart.split('T')[1].substring(0, 5) : null,
+    fecha_salida: dateEnd ? dateEnd.split('T')[0] : null,
+    hora_salida: dateEnd ? dateEnd.split('T')[1].substring(0, 5) : null,
+
+    arrendadorNombre: booking.clientData.arrendadorNombre,
+    arrendadorDNI: booking.clientData.arrendadorDni,
+    acompananteNombre: booking.clientData.acompananteNombre,
+    acompananteDNI: booking.clientData.acompananteDni,
+    email: emailToSend,
+    telefono: booking.clientData.telefono,
+
+    decoracion: booking.extras.decoracion 
+      ? (booking.extras.decoracionDetails && (booking.extras.decoracionDetails.iniciales || booking.extras.decoracionDetails.numero)
+          ? `${booking.extras.decoracion} (Inic: ${booking.extras.decoracionDetails.iniciales || '-'}, Num: ${booking.extras.decoracionDetails.numero || '-'})` 
+          : booking.extras.decoracion) 
+      : null,
+    decoracionDetails: booking.extras.decoracionDetails,
+    pack: booking.extras.pack,
+    personasExtra: booking.extras.personasExtra,
+    comentarios: booking.comments ?? "",
+    commentFields: booking.commentFields,
+    observaciones_completas: [
+      booking.commentFields?.generales,
+      booking.commentFields?.horaLlegada ? `HORA LLEGADA: ${booking.commentFields.horaLlegada}` : null,
+      booking.commentFields?.pagoManual ? `PAGO MANUAL: ${booking.commentFields.pagoManual}` : null
+    ].filter(Boolean).join("\n\n"),
 
     totalPrice: totalPrice,
     confirmedAt: new Date().toISOString(),
@@ -833,7 +884,7 @@ export async function sendFinalRegistroWebhook(booking: BookingData, pendingVeri
       },
       body: JSON.stringify({
         ...bookingData,
-        metodoPago: pendingVerification ? "bizum_transferencia" : "stripe",
+        metodoPago: pendingVerification ? "bizum_transferencia" : paymentMethodStr,
         estado: pendingVerification ? "pendiente_confirmacion" : "verificado",
       }),
     });
@@ -843,4 +894,3 @@ export async function sendFinalRegistroWebhook(booking: BookingData, pendingVeri
     return false;
   }
 }
-
