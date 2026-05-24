@@ -35,7 +35,7 @@ export function StepContractSigning({ booking, onNext }: StepContractSigningProp
         {contractState === "opened" ? (
           <div className="w-full flex flex-col items-center">
             {contractUrl ? (
-              <div className="w-full h-[600px] sm:h-[700px] rounded-lg overflow-hidden border border-border shadow-inner bg-white">
+              <div className="w-full h-[85vh] min-h-[900px] rounded-lg overflow-hidden border border-border shadow-inner bg-white">
                 <DocusealForm 
                   src={contractUrl}
                   
