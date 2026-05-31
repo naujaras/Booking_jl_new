@@ -116,8 +116,36 @@ const getInitialBookingData = (): BookingData => {
 };
 
 export function BookingWizard() {
-  const [booking, setBooking] = useState<BookingData>(getInitialBookingData);
+  const [booking, setBooking] = useState<BookingData>(() => {
+    const saved = sessionStorage.getItem('naujaras_booking');
+    if (saved) {
+      try { 
+        const parsed = JSON.parse(saved);
+        if (parsed.selections) {
+          // Convert string dates back to Date objects
+          parsed.selections = parsed.selections.map((s: any) => ({
+            ...s,
+            date: s.date ? new Date(s.date) : null
+          }));
+        }
+        if (parsed.date) {
+          parsed.date = new Date(parsed.date);
+        }
+        return parsed;
+      } catch (e) {}
+    }
+    return getInitialBookingData();
+  });
+
   const [currentStep, setCurrentStep] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment_success') === 'true') {
+      return 6; // Automatically go to contract step if returning from Stripe
+    }
+    const savedStep = sessionStorage.getItem('naujaras_step');
+    if (savedStep) {
+      return parseInt(savedStep, 10);
+    }
     const data = getInitialBookingData();
     if (data.room && data.date && data.jornada) {
       return 2;
@@ -125,6 +153,14 @@ export function BookingWizard() {
     return 1;
   });
   const [paymentPendingVerification, setPaymentPendingVerification] = useState(false);
+
+  useEffect(() => {
+    sessionStorage.setItem('naujaras_booking', JSON.stringify(booking));
+  }, [booking]);
+
+  useEffect(() => {
+    sessionStorage.setItem('naujaras_step', currentStep.toString());
+  }, [currentStep]);
 
   // Asegurar scroll position arriba al cambiar de paso
   useEffect(() => {

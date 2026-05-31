@@ -213,9 +213,9 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
       const paymentUrl = booking.paymentUrl;
 
       if (paymentUrl && paymentUrl !== "undefined") {
+        window.location.href = paymentUrl;
         setStripeUrl(paymentUrl);
         setPaymentState("waiting");
-        window.open(paymentUrl, '_blank');
       } else {
         throw new Error("No se recibió URL de pago desde la reserva principal.");
       }
@@ -368,7 +368,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
         <div className="space-y-3">
           {stripeUrl && (
             <Button
-              onClick={() => window.open(stripeUrl, '_blank')}
+              onClick={() => window.location.href = stripeUrl}
               variant="outline"
               className="w-full h-12"
             >
@@ -456,7 +456,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
           <p className="text-2xl font-bold text-primary">{totalPrice}€</p>
           {stripeUrl && (
             <Button
-              onClick={() => window.open(stripeUrl, '_blank')}
+              onClick={() => window.location.href = stripeUrl}
               className="w-full h-12"
             >
               <ExternalLink className="mr-2 h-4 w-4" />
