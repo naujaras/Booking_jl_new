@@ -773,7 +773,7 @@ export async function sendFinalRegistroWebhook(booking: BookingData, pendingVeri
 
     fechasCompletas = sortedSelections.map(sel => {
       const j = getJornadaForRoom(room.id, sel.jornada);
-      return `${format(new Date(sel.date), "dd/MM/yyyy")} (${j?.name})`;
+      return `${format(new Date(sel.date), "d/MM/yyyy")} (${j?.name})`;
     }).join(" + ");
   } else if (booking.date && jornada) {
     dateStart = formatDateTimeISO(new Date(booking.date), jornada.timeSlot.start);
@@ -784,14 +784,14 @@ export async function sendFinalRegistroWebhook(booking: BookingData, pendingVeri
     const [exitHour, exitMin] = jornada.timeSlot.end.split(':').map(Number);
     exitDate.setHours(exitHour, exitMin, 0, 0);
     dateEnd = formatDateTimeISO(exitDate, jornada.timeSlot.end);
-    fechasCompletas = `${format(new Date(booking.date), "dd/MM/yyyy")} (${jornada.name})`;
+    fechasCompletas = `${format(new Date(booking.date), "d/MM/yyyy")} (${jornada.name})`;
   }
 
   const bookingData = {
     room: room?.name,
     roomId: booking.room,
     date: booking.date ? format(booking.date, "yyyy-MM-dd") : null,
-    dateFormatted: booking.date ? format(booking.date, "dd/MM/yyyy") : null,
+    dateFormatted: booking.date ? format(booking.date, "d/MM/yyyy") : null,
     jornada: jornada?.name,
     jornadaId: booking.jornada,
     horario: jornada ? `${jornada.timeSlot.start} - ${jornada.timeSlot.end}` : null,
