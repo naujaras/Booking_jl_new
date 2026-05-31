@@ -9,24 +9,7 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  // Check for admin bypass
-  if (typeof window !== 'undefined') {
-    if (window.location.search.includes('admin=naujaras')) {
-      localStorage.setItem('admin_access', 'true');
-    }
-  }
-  
-  const isMaintenance = typeof window !== 'undefined' && localStorage.getItem('admin_access') !== 'true';
 
-  if (isMaintenance) {
-    return (
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#111', color: 'white', fontFamily: 'system-ui, sans-serif' }}>
-        <h1 style={{ fontSize: '2rem', marginBottom: '1rem', color: '#B3915F' }}>Naujarás</h1>
-        <p style={{ fontSize: '1.2rem', color: '#ccc' }}>Página web en mantenimiento.</p>
-        <p style={{ fontSize: '1rem', color: '#888', marginTop: '0.5rem' }}>Volveremos a estar disponibles muy pronto.</p>
-      </div>
-    );
-  }
 
   return (
     <QueryClientProvider client={queryClient}>
