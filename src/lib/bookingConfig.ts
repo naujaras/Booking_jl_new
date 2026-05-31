@@ -832,20 +832,10 @@ export async function sendFinalRegistroWebhook(booking: BookingData, pendingVeri
   };
 
   try {
-    const response = await fetch(N8N_BOOKING_REGISTRO_WEBHOOK, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        ...bookingData,
-        metodoPago: pendingVerification ? "bizum_transferencia" : paymentMethodStr,
-        estado: pendingVerification ? "pendiente_confirmacion" : "verificado",
-      }),
-    });
-    return response.ok;
+    console.log("El webhook final ahora lo envía Stripe directamente.");
+    return true;
   } catch (error) {
-    console.error("Error sending final webhook:", error);
+    console.error("Error:", error);
     return false;
   }
 }
