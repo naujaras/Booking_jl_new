@@ -529,11 +529,11 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
       const firstJ = getJornadaForRoom(booking.room!, firstS.jornada);
       const lastJ = getJornadaForRoom(booking.room!, lastS.jornada);
       
-      fechaEntrada = `${format(firstS.date, "yyyy-MM-dd")} ${firstJ?.timeSlot.start || ''}`;
+      fechaEntrada = `${format(firstS.date, "d/MM/yyyy")} ${firstJ?.timeSlot.start || ''}`;
       
       const exitDate = new Date(lastS.date);
       if (lastJ?.timeSlot.nextDay) exitDate.setDate(exitDate.getDate() + 1);
-      fechaSalida = `${format(exitDate, "yyyy-MM-dd")} ${lastJ?.timeSlot.end || ''}`;
+      fechaSalida = `${format(exitDate, "d/MM/yyyy")} ${lastJ?.timeSlot.end || ''}`;
       
       jornadaNameStr = sorted.map(s => {
         const j = getJornadaForRoom(booking.room!, s.jornada);
@@ -541,10 +541,10 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
       }).join(" + ");
     } else if (booking.date) {
       const jornada = getJornadaForRoom(booking.room!, booking.jornada!);
-      fechaEntrada = `${format(booking.date, "yyyy-MM-dd")} ${jornada?.timeSlot.start}`;
+      fechaEntrada = `${format(booking.date, "d/MM/yyyy")} ${jornada?.timeSlot.start}`;
       const exitDate = new Date(booking.date);
       if (jornada?.timeSlot.nextDay) exitDate.setDate(exitDate.getDate() + 1);
-      fechaSalida = `${format(exitDate, "yyyy-MM-dd")} ${jornada?.timeSlot.end}`;
+      fechaSalida = `${format(exitDate, "d/MM/yyyy")} ${jornada?.timeSlot.end}`;
       if (jornada) jornadaNameStr = jornada.name;
     }
 
