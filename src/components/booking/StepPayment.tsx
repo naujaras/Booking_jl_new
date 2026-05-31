@@ -537,6 +537,11 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
         if (data.success) {
           // TIENE SALDO Y SE HA DESCONTADO -> LA RESERVA SE CONSIDERA PAGADA
           setPaymentState("completed");
+          if (!webhookSentRef.current) {
+            webhookSentRef.current = true;
+            console.log("Enviando webhook final desde validarSaldoCajero...");
+            sendFinalRegistroWebhook(booking, false, "Ingreso en Cajero").catch(e => console.error("Error al enviar webhook:", e));
+          }
         } else {
           // NO TIENE SALDO O HUBO UN ERROR EN N8N
           setPaymentState("waiting");
