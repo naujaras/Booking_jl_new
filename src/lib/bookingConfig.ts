@@ -44,6 +44,8 @@ export interface RoomConfig {
   features: string[];
   jornadas: JornadaConfig[];
   photosLink: string;
+  tour3DLink?: string;
+  videoUrls?: string[];
 }
 
 export interface ClientData {
@@ -95,6 +97,8 @@ export const ROOMS: RoomConfig[] = [
     photosLink: "https://naujaras.com/#fotosyvideosatico",
     capacity: 2,
     features: ["Piscina climatizada", "Jacuzzi XXL", "Terraza privada", "Climatización"],
+    tour3DLink: "https://my.matterport.com/show/?m=jMSbKFEtoSa",
+    videoUrls: ["/videos/atico1.mp4", "/videos/atico2.mp4", "/videos/atico3.mp4"],
     jornadas: [
       {
         id: "dia",
@@ -134,6 +138,8 @@ export const ROOMS: RoomConfig[] = [
     photosLink: "https://naujaras.com/#fotosyvideosestudio",
     capacity: 2,
     features: ["Jacuzzi XXL", "Sofá", "Más amplio", "Climatización"],
+    tour3DLink: "https://my.matterport.com/show/?m=tTPuVY8puvu&ss=11&sr=-1.09,1.38",
+    videoUrls: ["/videos/estudio1.mp4", "/videos/estudio2.mp4", "/videos/estudio3.mp4"],
     jornadas: [
       {
         id: "dia",
@@ -173,6 +179,8 @@ export const ROOMS: RoomConfig[] = [
     photosLink: "https://naujaras.com/#habitacion",
     capacity: 2,
     features: ["Jacuzzi XXL", "Ambiente íntimo", "Climatización"],
+    tour3DLink: "https://my.matterport.com/show/?m=tTPuVY8puvu&ss=25&sr=-2.88,-.49",
+    videoUrls: ["/videos/habitacion1.mp4", "/videos/habitacion2.mp4", "/videos/habitacion3.mp4", "/videos/habitacion4.mp4"],
     jornadas: [
       {
         id: "dia",
