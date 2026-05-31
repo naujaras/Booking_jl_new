@@ -213,8 +213,8 @@ export const DECORATIONS: { id: DecorationType; name: string; price: number }[] 
 ];
 
 export const PACKS: { id: PackType; name: string; price: number }[] = [
-  { id: "cava", name: "Pack Cava", price: 9 },
-  { id: "lambrusco", name: "Pack Lambrusco", price: 9 }
+  { id: "cava", name: "Pack Cava + Bombones", price: 9 },
+  { id: "lambrusco", name: "Pack Lambrusco + Bombones", price: 9 }
 ];
 
 export const PERSONA_EXTRA_PRICE = 10;
