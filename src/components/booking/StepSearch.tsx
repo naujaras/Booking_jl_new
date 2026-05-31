@@ -51,6 +51,7 @@ export function StepSearch({
   const [availabilityResult, setAvailabilityResult] = useState<AvailabilityResult | null>(null);
   const [jornadaPrices, setJornadaPrices] = useState<JornadaPrices | null>(null);
   const [showJornadaDialog, setShowJornadaDialog] = useState(false);
+  const [currentVideoGallery, setCurrentVideoGallery] = useState<string[]>([]);
 
   useEffect(() => {
     async function checkDateAndPrices() {
@@ -156,7 +157,7 @@ export function StepSearch({
             <div
               key={room.id}
               className={cn(
-                "relative p-4 rounded-xl border-2 transition-all duration-300 text-center cursor-pointer min-h-[100px] flex items-center justify-center",
+                "relative p-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center justify-center gap-3 cursor-pointer min-h-[120px]",
                 "hover:border-primary/50 hover:shadow-md",
                 selectedRoom === room.id
                    ? "border-primary bg-primary/5 shadow-md"
@@ -168,11 +169,40 @@ export function StepSearch({
                 <CheckCircle2 className="absolute top-2 right-2 h-4 w-4 text-primary" />
               )}
               <h3 className={cn(
-                "font-semibold text-sm sm:text-base leading-tight px-2",
+                "font-semibold text-sm sm:text-base leading-tight px-2 text-center",
                 selectedRoom === room.id ? "text-primary" : "text-foreground"
               )}>
                 {room.name}
               </h3>
+              
+              <div className="flex gap-2 mt-auto">
+                {room.tour3DLink && (
+                  <Button 
+                    size="sm" 
+                    variant="secondary" 
+                    className="h-8 text-xs font-semibold bg-blue-100 hover:bg-blue-200 text-blue-800 border-none"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(room.tour3DLink, '_blank');
+                    }}
+                  >
+                    🕶️ Visita 3D
+                  </Button>
+                )}
+                {room.videoUrls && room.videoUrls.length > 0 && (
+                  <Button 
+                    size="sm" 
+                    variant="secondary" 
+                    className="h-8 text-xs font-semibold bg-rose-100 hover:bg-rose-200 text-rose-800 border-none"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentVideoGallery(room.videoUrls || []);
+                    }}
+                  >
+                    🎥 {room.videoUrls.length} Vídeos
+                  </Button>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -355,6 +385,29 @@ export function StepSearch({
               Volver
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Video Gallery Dialog */}
+      <Dialog open={currentVideoGallery.length > 0} onOpenChange={(open) => !open && setCurrentVideoGallery([])}>
+        <DialogContent className="sm:max-w-2xl bg-black border-none p-1 overflow-hidden">
+          <div className="relative w-full h-[60vh] sm:h-[80vh] flex overflow-x-auto snap-x snap-mandatory rounded-lg">
+            {currentVideoGallery.map((videoUrl, idx) => (
+              <div key={idx} className="w-full flex-shrink-0 snap-center flex items-center justify-center bg-black relative">
+                <video 
+                  src={videoUrl} 
+                  controls 
+                  className="w-full h-full object-contain"
+                  preload="metadata"
+                />
+              </div>
+            ))}
+          </div>
+          {currentVideoGallery.length > 1 && (
+             <p className="text-center text-zinc-400 text-sm mt-2 pb-2">
+               Desliza para ver más vídeos ({currentVideoGallery.length})
+             </p>
+          )}
         </DialogContent>
       </Dialog>
     </div>
