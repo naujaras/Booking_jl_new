@@ -638,6 +638,19 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
       contractUrl = 'https://docuseal.eu/d/NfUmr9QnzPYYsd';
     }
 
+    const paymentUrl = Array.isArray(data) ? (data[0]?.paymentUrl || data[0]?.stripe_url || data[0]?.url) : (data?.paymentUrl || data?.stripe_url || data?.url);
+
+    return {
+      success: true,
+      message: 'El contrato ha sido generado.',
+      bookingId: data[0]?.bookingId?.toString() || data?.bookingId?.toString() || data[0]?.id?.toString() || data?.id?.toString() || generatedBookingId,
+      contractUrl,
+      paymentUrl
+    };
+  } catch (error) {
+    console.error("Error createBooking:", error);
+    return { success: false, message: "No se pudo conectar con el sistema de reservas." };
+  }
 }
 
 // Email por defecto cuando el usuario no facilita uno
