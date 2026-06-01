@@ -458,11 +458,16 @@ export async function checkAvailability(date: Date, roomId: RoomId): Promise<Ava
     }).filter(e => e.start.dateTime && e.end.dateTime);
 
     const availableJornadas = getAvailableJornadas(events, roomId, date);
-    return { events, availableJornadas };
-
+    return {
+      events,
+      availableJornadas
+    };
   } catch (error) {
-    console.error('Error disponibilidad real:', error);
-    throw error;
+    console.error('Error fetching calendar events:', error);
+    return {
+      events: [],
+      availableJornadas: []
+    };
   }
 }
 
