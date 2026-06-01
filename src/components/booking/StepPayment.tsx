@@ -754,6 +754,11 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
                   <Smartphone className="mr-2 h-4 w-4" />
                   Pagar {totalPrice}€ con Bizum
                 </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Transferencia Bancaria por Stripe */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <button
