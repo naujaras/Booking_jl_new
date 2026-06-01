@@ -548,10 +548,13 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
       if (jornada) jornadaNameStr = jornada.name;
     }
 
+    const generatedBookingId = `NJ-${Date.now()}`;
+
     const response = await fetch(N8N_BOOKING_WEBHOOK_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        bookingId: generatedBookingId,
         room_name: room?.name,
         room_id: booking.room,
         date: booking.selections?.[0]?.date ? format(booking.selections[0].date, "yyyy-MM-dd") : (booking.date ? format(booking.date, "yyyy-MM-dd") : null),
@@ -635,19 +638,6 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
       contractUrl = 'https://docuseal.eu/d/NfUmr9QnzPYYsd';
     }
 
-    const paymentUrl = Array.isArray(data) ? (data[0]?.paymentUrl || data[0]?.stripe_url || data[0]?.url) : (data?.paymentUrl || data?.stripe_url || data?.url);
-
-    return {
-      success: true,
-      message: 'El contrato ha sido generado.',
-      bookingId: data[0]?.bookingId?.toString() || data?.bookingId?.toString() || data[0]?.id?.toString() || data?.id?.toString() || `NJ-${Date.now()}`,
-      contractUrl,
-      paymentUrl
-    };
-  } catch (error) {
-    console.error("Error createBooking:", error);
-    return { success: false, message: "No se pudo conectar con el sistema de reservas." };
-  }
 }
 
 // Email por defecto cuando el usuario no facilita uno
