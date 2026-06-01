@@ -308,14 +308,27 @@ export function StepFinalConfirmation({ booking, onReset, pendingVerification = 
         </p>
       </div>
 
-      {/* Botón para volver al hub */}
-      <Button
-        onClick={() => window.location.href = "https://naujaras.com"}
-        variant="outline"
-        className="w-full h-12"
-      >
-        Volver a la web principal
-      </Button>
+      {/* Botones de acción final */}
+      <div className="space-y-3">
+        <Button
+          onClick={() => {
+            sessionStorage.removeItem('naujaras_booking');
+            sessionStorage.removeItem('naujaras_step');
+            window.location.href = "https://naujaras.com";
+          }}
+          className="w-full h-12 text-lg"
+        >
+          Volver a la web principal
+        </Button>
+        
+        <Button
+          onClick={onReset}
+          variant="outline"
+          className="w-full h-12"
+        >
+          Hacer otra reserva
+        </Button>
+      </div>
     </div>
   );
 }
