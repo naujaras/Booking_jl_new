@@ -754,11 +754,6 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
                   <Smartphone className="mr-2 h-4 w-4" />
                   Pagar {totalPrice}€ con Bizum
                 </Button>
-              </div>
-            </div>
-          )}
-        </div>
-
         {/* Transferencia Bancaria por Stripe */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <button
@@ -780,7 +775,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
               <ChevronDown className="h-5 w-5 text-muted-foreground" />
             )}
           </button>
-
+          
           {expandedMethod === "transfer" && (
             <div className="p-4 pt-0 border-t border-border">
               <div className="mt-4 space-y-4">
@@ -795,42 +790,7 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
             </div>
           )}
         </div>
-
-        {/* Ingreso en Cajero (Único flujo manual real) */}
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <button
-            onClick={() => toggleMethod("cajero")}
-            className="w-full p-4 flex items-center justify-between text-left hover:bg-muted/50 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-400">
-                <Building2 className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-medium text-foreground">Cajero Automático</h3>
-                <p className="text-xs text-muted-foreground">Pago contra ingreso previo</p>
-              </div>
-            </div>
-            {expandedMethod === "cajero" ? (
-              <ChevronUp className="h-5 w-5 text-muted-foreground" />
-            ) : (
-              <ChevronDown className="h-5 w-5 text-muted-foreground" />
-            )}
-          </button>
-
-          {expandedMethod === "cajero" && (
-            <div className="p-4 pt-0 border-t border-border">
-              <div className="mt-4 space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Opción <strong>únicamente válida</strong> si tienes recargado tu saldo previamente en nuestros sistemas a través de un ingreso en cajero.
-                </p>
-                <Button onClick={() => handleManualMethodSelect("cajero")} variant="outline" className="w-full h-12">
-                   Utilizar Saldo de Ingreso
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
+        {/* Cajero Automático Eliminado temporalmente por petición de Juan */}
       </div>
 
       <Button
