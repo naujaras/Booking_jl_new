@@ -759,43 +759,44 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
           )}
         </div>
 
-        {/* Transferencia Bancaria por Stripe */}
+        {/* Ingreso en Cajero */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <button
-            onClick={() => toggleMethod("transfer")}
+            onClick={() => toggleMethod("cajero")}
             className="w-full p-4 flex items-center justify-between text-left hover:bg-muted/50 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
-                <Building2 className="h-5 w-5" />
+              <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400">
+                <Landmark className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-medium text-foreground">Transferencia Bancaria</h3>
-                <p className="text-xs text-muted-foreground">A través de nuestra pasarela Stripe</p>
+                <h3 className="font-medium text-foreground">Ingreso en Cajero</h3>
+                <p className="text-xs text-muted-foreground">Pago manual mediante ingreso bancario</p>
               </div>
             </div>
-            {expandedMethod === "transfer" ? (
+            {expandedMethod === "cajero" ? (
               <ChevronUp className="h-5 w-5 text-muted-foreground" />
             ) : (
               <ChevronDown className="h-5 w-5 text-muted-foreground" />
             )}
           </button>
           
-          {expandedMethod === "transfer" && (
+          {expandedMethod === "cajero" && (
             <div className="p-4 pt-0 border-t border-border">
               <div className="mt-4 space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Serás redirigido a Stripe, donde se te facilitarán los datos para tu transferencia bancaria automática.
+                  Al confirmar, generaremos tu reserva y deberás ingresar el importe exacto en el cajero automático. La confirmación será manual.
                 </p>
-                <Button onClick={() => initiateStripePayment("transfer")} variant="outline" className="w-full h-12">
-                  <Building2 className="mr-2 h-4 w-4" />
-                  Ir a realizar Transferencia
+                <Button onClick={() => handleManualMethodSelect("cajero")} variant="outline" className="w-full h-12">
+                  <Landmark className="mr-2 h-4 w-4" />
+                  Ir a Confirmar por Cajero
                 </Button>
               </div>
             </div>
           )}
         </div>
-        {/* Cajero Automático Eliminado temporalmente por petición de Juan */}
+
+        {/* Transferencia Bancaria Eliminada temporalmente */}
       </div>
 
       <Button
