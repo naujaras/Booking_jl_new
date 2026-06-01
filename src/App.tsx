@@ -3,25 +3,16 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useState, useEffect } from "react";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  const [isAdmin, setIsAdmin] = useState(() => {
-    return sessionStorage.getItem('admin_rocio') === 'true' || window.location.search.includes('admin=rocio');
-  });
-
-  useEffect(() => {
-    if (window.location.search.includes('admin=rocio')) {
-      sessionStorage.setItem('admin_rocio', 'true');
-      setIsAdmin(true);
-    }
-  }, []);
-
-  if (!isAdmin) {
+  // MANTENIMIENTO DESACTIVADO
+  const isMaintenanceMode = false;
+  
+  if (isMaintenanceMode) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-50 p-6 text-center">
         <div className="max-w-lg space-y-6 bg-white p-10 rounded-2xl shadow-lg border border-zinc-100">
