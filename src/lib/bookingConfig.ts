@@ -788,6 +788,7 @@ export async function sendFinalRegistroWebhook(booking: BookingData, pendingVeri
   }
 
   const bookingData = {
+    bookingId: booking.bookingId,
     room: room?.name,
     roomId: booking.room,
     date: booking.date ? format(booking.date, "yyyy-MM-dd") : null,
