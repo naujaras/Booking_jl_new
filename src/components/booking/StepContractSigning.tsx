@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { FileSignature, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { BookingData } from "@/lib/bookingConfig";
+import { BookingData, sendFinalRegistroWebhook } from "@/lib/bookingConfig";
 import { DocusealForm } from '@docuseal/react';
 
 interface StepContractSigningProps {
@@ -12,6 +12,7 @@ interface StepContractSigningProps {
 }
 
 export function StepContractSigning({ booking, onNext }: StepContractSigningProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [contractState, setContractState] = useState<"opened" | "completed">("opened");
 
   const contractUrl = booking.contractUrl;
@@ -71,15 +72,40 @@ export function StepContractSigning({ booking, onNext }: StepContractSigningProp
       {/* Botones de finalización - Siempre visible en modo desarrollo/fallback o cuando se completa */}
       <div className="space-y-3 pt-6 border-t border-border slide-in-from-bottom-4 animate-in">
         <Button
-          onClick={onNext}
+          disabled={isSubmitting}
+          onClick={async () => {
+            if (contractState === "completed") {
+              setIsSubmitting(true);
+              try {
+                // Enviar el webhook de Confirmación y Calendario para pagos de Stripe
+                await sendFinalRegistroWebhook(booking, false, "stripe");
+              } catch (e) {
+                console.error("Error al enviar webhook de confirmación final:", e);
+              } finally {
+                setIsSubmitting(false);
+                onNext();
+              }
+            } else {
+              onNext();
+            }
+          }}
           className={`w-full h-14 text-lg font-bold shadow-lg transition-all duration-300 ${
             contractState === "completed" 
               ? "bg-green-600 hover:bg-green-700 text-white scale-100 opacity-100" 
               : "bg-secondary text-secondary-foreground opacity-50"
           }`}
         >
-          <CheckCircle2 className="mr-2 h-5 w-5" />
-          {contractState === "completed" ? "Finalizar Reserva" : "Ya he firmado (Continuar)"}
+          {isSubmitting ? (
+            <span className="flex items-center gap-2">
+              <span className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin"></span>
+              Confirmando...
+            </span>
+          ) : (
+            <>
+              <CheckCircle2 className="mr-2 h-5 w-5" />
+              {contractState === "completed" ? "Finalizar Reserva" : "Ya he firmado (Continuar)"}
+            </>
+          )}
         </Button>
       </div>
     </div>
