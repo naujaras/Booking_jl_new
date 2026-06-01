@@ -832,8 +832,19 @@ export async function sendFinalRegistroWebhook(booking: BookingData, pendingVeri
   };
 
   try {
-    console.log("El webhook final ahora lo envía Stripe directamente.");
-    return true;
+    if (paymentMethodStr === "stripe") {
+      console.log("El webhook final ahora lo envía Stripe directamente.");
+      return true;
+    } else {
+      console.log(`Enviando webhook final para método manual: ${paymentMethodStr}`);
+      const response = await fetch(N8N_BOOKING_REGISTRO_WEBHOOK, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bookingData)
+      });
+      if (!response.ok) throw new Error("Error al procesar el webhook de confirmación");
+      return true;
+    }
   } catch (error) {
     console.error("Error:", error);
     return false;
