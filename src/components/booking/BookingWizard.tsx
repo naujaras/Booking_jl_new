@@ -390,7 +390,12 @@ export function BookingWizard() {
             <StepConfirmation
               booking={booking}
               onBack={() => setCurrentStep(3)}
-              onNext={() => setCurrentStep(5)}
+              onNext={() => {
+                if (!booking.bookingId) {
+                  setBooking(prev => ({ ...prev, bookingId: `NJ-${Date.now()}` }));
+                }
+                setCurrentStep(5);
+              }}
               onCommentsChange={handleCommentsChange}
               onCommentFieldsChange={handleCommentFieldsChange}
               onSeguroChange={handleSeguroChange}
