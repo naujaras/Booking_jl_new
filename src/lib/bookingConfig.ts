@@ -548,7 +548,7 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
       if (jornada) jornadaNameStr = jornada.name;
     }
 
-    const generatedBookingId = `NJ-${Date.now()}`;
+    const generatedBookingId = booking.bookingId || `NJ-${Date.now()}`;
 
     const response = await fetch(N8N_BOOKING_WEBHOOK_URL, {
       method: "POST",
@@ -643,7 +643,7 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
     return {
       success: true,
       message: 'El contrato ha sido generado.',
-      bookingId: data[0]?.bookingId?.toString() || data?.bookingId?.toString() || data[0]?.id?.toString() || data?.id?.toString() || generatedBookingId,
+      bookingId: data[0]?.bookingId?.toString() || data?.bookingId?.toString() || generatedBookingId,
       contractUrl,
       paymentUrl
     };
