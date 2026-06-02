@@ -321,6 +321,21 @@ export function formatTimeSlot(timeSlot: TimeSlot): string {
   return `Entrada: ${timeSlot.start} / Salida: ${timeSlot.end}${endLabel}`;
 }
 
+export function getCombinedExtrasString(booking: BookingData): string | null {
+  const decName = booking.extras.decoracion 
+    ? (booking.extras.decoracionDetails && (booking.extras.decoracionDetails.iniciales || booking.extras.decoracionDetails.numero)
+        ? `${DECORATIONS.find(d => d.id === booking.extras.decoracion)?.name || booking.extras.decoracion} (Inic: ${booking.extras.decoracionDetails.iniciales || '-'}, Num: ${booking.extras.decoracionDetails.numero || '-'})` 
+        : (DECORATIONS.find(d => d.id === booking.extras.decoracion)?.name || booking.extras.decoracion))
+    : null;
+  
+  const packName = booking.extras.pack 
+    ? (PACKS.find(p => p.id === booking.extras.pack)?.name || booking.extras.pack) 
+    : null;
+
+  const combined = [decName, packName].filter(Boolean).join(" + ");
+  return combined || null;
+}
+
 // Función auxiliar para formatear fecha en formato ISO local para n8n
 export function formatDateTimeLocal(date: Date, time: string): string {
   const year = date.getFullYear();
@@ -573,11 +588,7 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
         telefono: booking.clientData.telefono,
         acompanante_nombre: booking.clientData.acompananteNombre,
         acompanante_dni: booking.clientData.acompananteDni,
-        decoracion_name: booking.extras.decoracion 
-          ? (booking.extras.decoracionDetails && (booking.extras.decoracionDetails.iniciales || booking.extras.decoracionDetails.numero)
-              ? `${booking.extras.decoracion} (Inic: ${booking.extras.decoracionDetails.iniciales || '-'}, Num: ${booking.extras.decoracionDetails.numero || '-'})` 
-              : booking.extras.decoracion) 
-          : null,
+        decoracion_name: getCombinedExtrasString(booking),
         personas_extra: booking.extras.personasExtra,
         extras: {
           decoracion: booking.extras.decoracion 
@@ -820,11 +831,7 @@ export async function sendFinalRegistroWebhook(booking: BookingData, pendingVeri
     email: emailToSend,
     telefono: booking.clientData.telefono,
 
-    decoracion: booking.extras.decoracion 
-      ? (booking.extras.decoracionDetails && (booking.extras.decoracionDetails.iniciales || booking.extras.decoracionDetails.numero)
-          ? `${booking.extras.decoracion} (Inic: ${booking.extras.decoracionDetails.iniciales || '-'}, Num: ${booking.extras.decoracionDetails.numero || '-'})` 
-          : booking.extras.decoracion) 
-      : null,
+    decoracion: getCombinedExtrasString(booking),
     decoracionDetails: booking.extras.decoracionDetails,
     pack: booking.extras.pack,
     personasExtra: booking.extras.personasExtra,
