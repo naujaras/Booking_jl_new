@@ -194,12 +194,18 @@ export function BookingWizard() {
         }).catch(err => console.error("Error cargando precio dinámico para URL:", err));
       }
 
-      setBooking(prev => ({
-        ...prev,
-        room: data.room || prev.room,
-        date: data.date || prev.date,
-        jornada: data.jornada || prev.jornada
-      }));
+      setBooking(prev => {
+        const isNewHubRequest = !!(data.room && data.date && data.jornada);
+        return {
+          ...prev,
+          room: data.room || prev.room,
+          date: data.date || prev.date,
+          jornada: data.jornada || prev.jornada,
+          // Al venir del Hub con una nueva fecha, SOBREESCRIBIMOS las selecciones
+          selections: isNewHubRequest ? data.selections : prev.selections,
+          jornadaPrice: isNewHubRequest ? data.selections[0]?.price : prev.jornadaPrice
+        };
+      });
 
       if (data.room && data.date && data.jornada && currentStep === 1) {
         setCurrentStep(2);
