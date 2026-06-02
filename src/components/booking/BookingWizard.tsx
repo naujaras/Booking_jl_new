@@ -373,6 +373,12 @@ export function BookingWizard() {
 
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="space-y-8">
+          {showPriceSummary && (
+            <div className="block lg:hidden mb-6">
+              <PriceSummary booking={booking} />
+            </div>
+          )}
+
           {currentStep === 1 && (
             <StepSearch
               selectedRoom={booking.room}
