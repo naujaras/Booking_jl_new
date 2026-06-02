@@ -18,7 +18,8 @@ import {
   ClientData,
   DecorationDetails,
   getRoomById,
-  sendFinalRegistroWebhook
+  sendFinalRegistroWebhook,
+  fetchJornadaPrices
 } from "@/lib/bookingConfig";
 
 const STEPS = [
@@ -171,12 +172,35 @@ export function BookingWizard() {
   useEffect(() => {
     const data = getInitialBookingData();
     if (data.room || data.date || data.jornada) {
+      // Si tenemos los 3 datos, intentamos cargar el precio dinámico desde el Excel
+      if (data.room && data.date && data.jornada) {
+        fetchJornadaPrices(data.date, data.room).then(prices => {
+          if (prices && prices[data.jornada as string] !== undefined) {
+            const dynamicPrice = prices[data.jornada as string];
+            setBooking(prev => {
+              // Actualizamos la selección con el nuevo precio
+              const newSelections = prev.selections.map(s => 
+                (s.jornada === data.jornada && s.date?.getTime() === data.date?.getTime()) 
+                  ? { ...s, price: dynamicPrice } 
+                  : s
+              );
+              return { 
+                ...prev, 
+                jornadaPrice: dynamicPrice, 
+                selections: newSelections 
+              };
+            });
+          }
+        }).catch(err => console.error("Error cargando precio dinámico para URL:", err));
+      }
+
       setBooking(prev => ({
         ...prev,
         room: data.room || prev.room,
         date: data.date || prev.date,
         jornada: data.jornada || prev.jornada
       }));
+
       if (data.room && data.date && data.jornada && currentStep === 1) {
         setCurrentStep(2);
       }
