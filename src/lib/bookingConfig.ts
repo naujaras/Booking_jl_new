@@ -602,6 +602,11 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
         },
         comentarios: booking.comments,
         commentFields: booking.commentFields,
+        observaciones_completas: [
+          booking.commentFields?.generales,
+          booking.commentFields?.horaLlegada ? `HORA LLEGADA: ${booking.commentFields.horaLlegada}` : null,
+          booking.commentFields?.pagoManual ? `PAGO MANUAL: ${booking.commentFields.pagoManual}` : null
+        ].filter(Boolean).join("\n\n"),
         precio_total: calculateTotalPrice(booking),
         seguro_cancelacion: booking.seguroCancelacion
       })
