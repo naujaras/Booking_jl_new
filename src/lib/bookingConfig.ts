@@ -741,12 +741,11 @@ export function validateEmail(email: string): boolean {
 }
 
 /**
- * Valida teléfono internacional o español (opcional +, 8 a 15 dígitos)
+ * Valida teléfono español (9 dígitos empezando por 6, 7 o 9)
  */
 export function validatePhone(phone: string): boolean {
-  const cleanPhone = phone.replace(/[\s-]/g, '');
-  const phoneRegex = /^\+?[0-9]{8,15}$/;
-  return phoneRegex.test(cleanPhone);
+  const phoneRegex = /^[679][0-9]{8}$/;
+  return phoneRegex.test(phone.replace(/\s/g, ''));
 }
 
 // Calcular 100% matemáticamente el horario de verano/invierno en España
