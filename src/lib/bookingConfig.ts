@@ -723,6 +723,12 @@ export function validateDNI(dni: string): boolean {
     return upperDni.charAt(8) === letraEsperada;
   }
 
+  // Validar formato Pasaporte genérico (entre 5 y 15 caracteres alfanuméricos)
+  const passportRegex = /^[A-Z0-9]{5,15}$/;
+  if (passportRegex.test(upperDni)) {
+    return true; // Es un pasaporte válido
+  }
+
   return false;
 }
 
