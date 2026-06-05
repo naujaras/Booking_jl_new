@@ -492,8 +492,8 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
       }
       
       const regex = /^[0-9]{8}[A-Z]$/;
-      if (!regex.test(dni)) {
-        setCajeroError("El formato del DNI es incorrecto. Ejemplo: 12345678X");
+      if (!regex.test(dni) && !/^[A-Z0-9]{5,15}$/.test(dni)) {
+        setCajeroError("El formato es incorrecto. Ej: 12345678X o número de Pasaporte válido.");
         return;
       }
 
@@ -587,8 +587,8 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
               placeholder="Ej: 12345678X"
               className="flex h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 uppercase"
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              Introduzca el DNI con letras mayúsculas y sin espacios.
+            <p className="text-sm text-muted-foreground">
+              Introduzca el DNI o Pasaporte con letras mayúsculas y sin espacios.
             </p>
             
             {cajeroError && (
