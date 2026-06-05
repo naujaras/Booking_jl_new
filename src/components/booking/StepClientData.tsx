@@ -59,16 +59,16 @@ export function StepClientData({
         else if (!validateFullName(value)) error = "Introduce nombre y apellidos";
         break;
       case "arrendadorDni":
-        if (!value.trim()) error = "El DNI es obligatorio";
-        else if (!validateDNI(value)) error = "Formato inválido (Ej: 00000000X)";
+        if (!value.trim()) error = "El DNI/Pasaporte es obligatorio";
+        else if (!validateDNI(value)) error = "Formato inválido (Ej: 12345678X o Pasaporte)";
         break;
       case "acompananteNombre":
         if (!value.trim()) error = "El nombre del acompañante es obligatorio";
         else if (!validateFullName(value)) error = "Introduce nombre y apellidos";
         break;
       case "acompananteDni":
-        if (!value.trim()) error = "El DNI del acompañante es obligatorio";
-        else if (!validateDNI(value)) error = "Formato inválido (Ej: 00000000X)";
+        if (!value.trim()) error = "El DNI/Pasaporte es obligatorio";
+        else if (!validateDNI(value)) error = "Formato inválido (Ej: 12345678X o Pasaporte)";
         break;
       case "email":
         if (!value.trim()) error = "El email es obligatorio";
@@ -155,8 +155,8 @@ export function StepClientData({
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="arrendadorDni">DNI/NIE <span className="text-destructive">*</span></Label>
-            <p className="text-[10px] text-muted-foreground -mt-1 leading-tight">Obligatorio (formato: 00000000X)</p>
+            <Label htmlFor="arrendadorDni">DNI / Pasaporte <span className="text-destructive">*</span></Label>
+            <p className="text-[10px] text-muted-foreground -mt-1 leading-tight">Obligatorio (Ej: 12345678X o Pasaporte)</p>
             <div className="relative mt-2">
               <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -203,8 +203,8 @@ export function StepClientData({
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="acompananteDni">DNI/NIE <span className="text-destructive">*</span></Label>
-            <p className="text-[10px] text-muted-foreground -mt-1 leading-tight">Obligatorio (formato: 00000000X)</p>
+            <Label htmlFor="acompananteDni">DNI / Pasaporte <span className="text-destructive">*</span></Label>
+            <p className="text-[10px] text-muted-foreground -mt-1 leading-tight">Obligatorio (Ej: 12345678X o Pasaporte)</p>
             <div className="relative mt-2">
               <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
