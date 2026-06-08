@@ -9,8 +9,8 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  // MANTENIMIENTO DESACTIVADO
-  const isMaintenanceMode = false;
+  // MANTENIMIENTO ACTIVADO
+  const isMaintenanceMode = true;
   
   if (isMaintenanceMode) {
     return (
