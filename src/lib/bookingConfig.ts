@@ -256,10 +256,7 @@ export function calculateTotalPrice(booking: BookingData): number {
     if (booking.jornadaPrice !== null && booking.jornadaPrice !== undefined) {
       total += booking.jornadaPrice;
     } else {
-      const jornada = getJornadaForRoom(booking.room, booking.jornada);
-      if (jornada) {
-        total += jornada.price;
-      }
+      throw new Error("ERROR: Precio no encontrado en Excel.");
     }
   }
 
@@ -292,10 +289,7 @@ export function calculateInsurancePrice(booking: BookingData): number {
     if (booking.jornadaPrice !== null && booking.jornadaPrice !== undefined) {
       baseTotal += booking.jornadaPrice;
     } else {
-      const jornada = getJornadaForRoom(booking.room, booking.jornada);
-      if (jornada) {
-        baseTotal += jornada.price;
-      }
+      throw new Error("ERROR: Precio no encontrado en Excel.");
     }
   }
   
