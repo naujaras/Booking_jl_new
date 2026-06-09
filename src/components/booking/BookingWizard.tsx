@@ -171,14 +171,25 @@ export function BookingWizard() {
   // Sincronizar con cambios en la URL (importante para redirecciones del Hub)
   useEffect(() => {
     const data = getInitialBookingData();
-    if (data.room || data.date || data.jornada) {
-      // Si tenemos los 3 datos, intentamos cargar el precio dinámico desde el Excel
+      setBooking(prev => {
+        const isNewHubRequest = !!(data.room && data.date && data.jornada);
+        return {
+          ...prev,
+          room: data.room || prev.room,
+          date: data.date || prev.date,
+          jornada: data.jornada || prev.jornada,
+          // Guardamos las selecciones temporales, pero luego se actualizarán con el precio dinámico
+          selections: isNewHubRequest ? data.selections : prev.selections,
+          jornadaPrice: isNewHubRequest ? data.selections[0]?.price : prev.jornadaPrice
+        };
+      });
+
+      // Si tenemos los 3 datos, OBLIGAMOS a cargar el precio dinámico desde el Excel ANTES de avanzar
       if (data.room && data.date && data.jornada) {
         fetchJornadaPrices(data.date, data.room).then(prices => {
           if (prices && prices[data.jornada as string] !== undefined) {
             const dynamicPrice = prices[data.jornada as string];
             setBooking(prev => {
-              // Actualizamos la selección con el nuevo precio
               const newSelections = prev.selections.map(s => 
                 (s.jornada === data.jornada && s.date?.getTime() === data.date?.getTime()) 
                   ? { ...s, price: dynamicPrice } 
@@ -190,27 +201,21 @@ export function BookingWizard() {
                 selections: newSelections 
               };
             });
+            // Solo avanzamos al paso 2 si hemos conseguido el precio real de Excel
+            if (currentStep === 1) {
+              setCurrentStep(2);
+            }
+          } else {
+            console.error("Error: n8n no devolvió el precio para esta jornada al venir del Hub.");
+            alert("Error temporal de conexión con el Excel. Por favor, vuelve a seleccionar la fecha.");
+            setCurrentStep(1); // Lo devolvemos al paso 1
           }
-        }).catch(err => console.error("Error cargando precio dinámico para URL:", err));
+        }).catch(err => {
+          console.error("Error crítico cargando precio dinámico para URL:", err);
+          alert("Error temporal de conexión con el Excel. Por favor, vuelve a seleccionar la fecha.");
+          setCurrentStep(1); // Lo devolvemos al paso 1
+        });
       }
-
-      setBooking(prev => {
-        const isNewHubRequest = !!(data.room && data.date && data.jornada);
-        return {
-          ...prev,
-          room: data.room || prev.room,
-          date: data.date || prev.date,
-          jornada: data.jornada || prev.jornada,
-          // Al venir del Hub con una nueva fecha, SOBREESCRIBIMOS las selecciones
-          selections: isNewHubRequest ? data.selections : prev.selections,
-          jornadaPrice: isNewHubRequest ? data.selections[0]?.price : prev.jornadaPrice
-        };
-      });
-
-      if (data.room && data.date && data.jornada && currentStep === 1) {
-        setCurrentStep(2);
-      }
-    }
   }, []);
 
   const handleRoomChange = (room: RoomId) => {
