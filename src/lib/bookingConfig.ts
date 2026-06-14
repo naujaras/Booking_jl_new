@@ -828,6 +828,9 @@ export async function sendFinalRegistroWebhook(booking: BookingData, pendingVeri
     hora_entrada: dateStart ? dateStart.split('T')[1].substring(0, 5) : null,
     fecha_salida: dateEnd ? dateEnd.split('T')[0] : null,
     hora_salida: dateEnd ? dateEnd.split('T')[1].substring(0, 5) : null,
+    
+    fecha_entrada_es: dateStart ? format(new Date(dateStart), "d/MM/yyyy") : null,
+    fecha_salida_es: dateEnd ? format(new Date(dateEnd), "d/MM/yyyy") : null,
 
     arrendadorNombre: booking.clientData.arrendadorNombre,
     arrendadorDNI: booking.clientData.arrendadorDni,
