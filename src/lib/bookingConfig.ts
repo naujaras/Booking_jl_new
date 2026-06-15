@@ -576,6 +576,8 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
         jornada_id: primaryJornada,
         fecha_entrada: fechaEntrada,
         fecha_salida: fechaSalida,
+        fecha_entrada_es: fechaEntrada.split(" ")[0],
+        fecha_salida_es: fechaSalida.split(" ")[0],
         arrendador_nombre: booking.clientData.arrendadorNombre,
         arrendador_dni: booking.clientData.arrendadorDni,
         email: email,
