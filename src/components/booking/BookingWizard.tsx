@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { StepSearch } from "./StepSearch";
 import { StepExtras } from "./StepExtras";
 import { StepClientData } from "./StepClientData";
@@ -103,7 +105,7 @@ const getInitialBookingData = (): BookingData => {
     const roomObj = getRoomById(roomParam);
     const jConfig = roomObj?.jornadas.find((x: any) => x.id === parsedJornada);
     if (jConfig) {
-      initialSelections = [{ date: parsedDate, jornada: parsedJornada, price: jConfig.price }];
+      initialSelections = [{ date: parsedDate, jornada: parsedJornada, price: 0 }]; // Inicializar a 0 para que sea n8n quien dé el precio
     }
   }
 
@@ -147,13 +149,10 @@ export function BookingWizard() {
     if (savedStep) {
       return parseInt(savedStep, 10);
     }
-    const data = getInitialBookingData();
-    if (data.room && data.date && data.jornada) {
-      return 2;
-    }
-    return 1;
+    return 1; // Ya no saltamos al paso 2 a ciegas. Esperamos a que n8n confirme el precio en el useEffect.
   });
   const [paymentPendingVerification, setPaymentPendingVerification] = useState(false);
+  const [hubError, setHubError] = useState(false);
 
   useEffect(() => {
     sessionStorage.setItem('naujaras_booking', JSON.stringify(booking));
@@ -211,9 +210,13 @@ export function BookingWizard() {
             setCurrentStep(curr => curr === 1 ? 2 : curr);
           } else {
             console.error("Error: n8n no devolvió el precio para esta jornada al venir del Hub.");
+            setHubError(true);
+            setBooking(prev => ({ ...prev, selections: [], date: null, jornada: null, jornadaPrice: null }));
           }
         }).catch(err => {
           console.error("Error crítico cargando precio dinámico para URL:", err);
+          setHubError(true);
+          setBooking(prev => ({ ...prev, selections: [], date: null, jornada: null, jornadaPrice: null }));
         });
         
         // Limpiamos la URL para evitar que al refrescar o ir hacia atrás se vuelva a leer
@@ -324,6 +327,125 @@ export function BookingWizard() {
 
   const handleSeguroChange = (seguroCancelacion: boolean) => {
     setBooking({ ...booking, seguroCancelacion });
+  };
+
+  const renderStep = () => {
+    if (hubError) {
+      return (
+        <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center space-y-6 animate-in fade-in duration-500">
+          <div className="bg-destructive/10 text-destructive p-5 rounded-full ring-8 ring-destructive/5">
+            <AlertTriangle className="h-14 w-14" />
+          </div>
+          <h2 className="text-3xl font-bold font-serif text-foreground">¡Vaya! Algo ha fallado</h2>
+          <p className="text-muted-foreground text-lg max-w-md">
+            No hemos podido conectar con el sistema de tarifas para comprobar el precio. Puede ser un error de conexión temporal.
+          </p>
+          <Button 
+            onClick={() => {
+              setHubError(false);
+              setCurrentStep(1);
+            }} 
+            size="lg"
+            className="mt-4 h-12 px-8 text-base shadow-md"
+          >
+            Volver al inicio e intentarlo de nuevo
+          </Button>
+        </div>
+      );
+    }
+
+    switch (currentStep) {
+      case 1:
+        return (
+          <StepSearch
+            selectedRoom={booking.room}
+            selections={booking.selections}
+            onRoomChange={handleRoomChange}
+            onAddSelection={handleAddSelection}
+            onRemoveSelection={handleRemoveSelection}
+            onNext={() => setCurrentStep(2)}
+          />
+        );
+      case 2:
+        return (
+          <StepExtras
+            selectedRoom={booking.room}
+            selectedJornada={booking.jornada}
+            selectedDecoracion={booking.extras.decoracion}
+            decoracionDetails={booking.extras.decoracionDetails}
+            selectedPack={booking.extras.pack}
+            personasExtra={booking.extras.personasExtra}
+            onDecoracionChange={handleDecoracionChange}
+            onDecoracionDetailsChange={handleDecoracionDetailsChange}
+            onPackChange={handlePackChange}
+            onPersonasExtraChange={handlePersonasExtraChange}
+            onNext={() => setCurrentStep(3)}
+            onBack={() => setCurrentStep(1)}
+          />
+        );
+      case 3:
+        return (
+          <StepClientData
+            clientData={booking.clientData}
+            onClientDataChange={handleClientDataChange}
+            onNext={() => setCurrentStep(4)}
+            onBack={() => setCurrentStep(2)}
+          />
+        );
+      case 4:
+        return (
+          <StepConfirmation
+            booking={booking}
+            onBack={() => setCurrentStep(3)}
+            onNext={() => {
+              if (!booking.bookingId) {
+                setBooking(prev => ({ ...prev, bookingId: `NJ-${Date.now()}` }));
+              }
+              setCurrentStep(5);
+            }}
+            onCommentsChange={handleCommentsChange}
+            onCommentFieldsChange={handleCommentFieldsChange}
+            onSeguroChange={handleSeguroChange}
+          />
+        );
+      case 5:
+        return (
+          <StepPayment
+            booking={booking}
+            onBack={() => setCurrentStep(4)}
+            onNext={() => setCurrentStep(6)}
+            onReset={handleReset}
+            onPendingVerification={handlePaymentPendingVerification}
+            onBookingCreated={(paymentUrl, contractUrl, bookingId) => {
+              setBooking(prev => ({ 
+                ...prev, 
+                ...(paymentUrl ? { paymentUrl } : {}),
+                ...(contractUrl ? { contractUrl } : {}),
+                ...(bookingId ? { bookingId } : {})
+              }));
+            }}
+          />
+        );
+      case 6:
+        return (
+          <StepContractSigning
+            booking={booking}
+            onBack={() => setCurrentStep(5)}
+            onNext={() => setCurrentStep(7)}
+            onReset={handleReset}
+          />
+        );
+      case 7:
+        return (
+          <StepFinalConfirmation
+            booking={booking}
+            onReset={handleReset}
+            pendingVerification={paymentPendingVerification}
+          />
+        );
+      default:
+        return null;
+    }
   };
 
   const handleReset = () => {
