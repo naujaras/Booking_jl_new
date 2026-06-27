@@ -173,18 +173,24 @@ export function BookingWizard() {
     const data = getInitialBookingData();
       setBooking(prev => {
         const isNewHubRequest = !!(data.room && data.date && data.jornada);
-        return {
-          ...prev,
-          room: data.room || prev.room,
-          date: data.date || prev.date,
-          jornada: data.jornada || prev.jornada,
-          // Guardamos las selecciones temporales, pero luego se actualizarán con el precio dinámico
-          selections: isNewHubRequest ? data.selections : prev.selections,
-          jornadaPrice: isNewHubRequest ? data.selections[0]?.price : prev.jornadaPrice
-        };
+        const isSameBooking = prev.room === data.room && 
+                              prev.date?.getTime() === data.date?.getTime() && 
+                              prev.jornada === data.jornada;
+
+        if (isNewHubRequest && !isSameBooking) {
+          return {
+            ...prev,
+            room: data.room,
+            date: data.date,
+            jornada: data.jornada,
+            selections: data.selections,
+            jornadaPrice: data.selections[0]?.price
+          };
+        }
+        return prev; // Si es la misma reserva, conservamos el prev (que ya tiene el precio dinámico de sessionStorage)
       });
 
-      // Si tenemos los 3 datos, OBLIGAMOS a cargar el precio dinámico desde el Excel ANTES de avanzar
+      // Si tenemos los 3 datos, intentamos cargar el precio dinámico si no lo tenemos aún
       if (data.room && data.date && data.jornada) {
         fetchJornadaPrices(data.date, data.room).then(prices => {
           if (prices && prices[data.jornada as string] !== undefined) {
@@ -201,20 +207,17 @@ export function BookingWizard() {
                 selections: newSelections 
               };
             });
-            // Solo avanzamos al paso 2 si hemos conseguido el precio real de Excel
-            if (currentStep === 1) {
-              setCurrentStep(2);
-            }
+            // Avanzamos al paso 2 si venimos limpios del paso 1
+            setCurrentStep(curr => curr === 1 ? 2 : curr);
           } else {
             console.error("Error: n8n no devolvió el precio para esta jornada al venir del Hub.");
-            alert("Error temporal de conexión con el Excel. Por favor, vuelve a seleccionar la fecha.");
-            setCurrentStep(1); // Lo devolvemos al paso 1
           }
         }).catch(err => {
           console.error("Error crítico cargando precio dinámico para URL:", err);
-          alert("Error temporal de conexión con el Excel. Por favor, vuelve a seleccionar la fecha.");
-          setCurrentStep(1); // Lo devolvemos al paso 1
         });
+        
+        // Limpiamos la URL para evitar que al refrescar o ir hacia atrás se vuelva a leer
+        window.history.replaceState({}, '', window.location.pathname);
       }
   }, []);
 
