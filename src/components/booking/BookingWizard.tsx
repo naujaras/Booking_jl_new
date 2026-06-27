@@ -211,12 +211,18 @@ export function BookingWizard() {
           } else {
             console.error("Error: n8n no devolvió el precio para esta jornada al venir del Hub.");
             setHubError(true);
-            setBooking(prev => ({ ...prev, selections: [], date: null, jornada: null, jornadaPrice: null }));
+            setBooking(initialBookingData);
+            window.history.replaceState({}, '', window.location.pathname);
+            sessionStorage.removeItem('naujaras_booking');
+            sessionStorage.removeItem('naujaras_step');
           }
         }).catch(err => {
           console.error("Error crítico cargando precio dinámico para URL:", err);
           setHubError(true);
-          setBooking(prev => ({ ...prev, selections: [], date: null, jornada: null, jornadaPrice: null }));
+          setBooking(initialBookingData);
+          window.history.replaceState({}, '', window.location.pathname);
+          sessionStorage.removeItem('naujaras_booking');
+          sessionStorage.removeItem('naujaras_step');
         });
         
         // Limpiamos la URL para evitar que al refrescar o ir hacia atrás se vuelva a leer
@@ -343,7 +349,11 @@ export function BookingWizard() {
           <Button 
             onClick={() => {
               setHubError(false);
+              setBooking(initialBookingData);
               setCurrentStep(1);
+              window.history.replaceState({}, '', window.location.pathname);
+              sessionStorage.removeItem('naujaras_booking');
+              sessionStorage.removeItem('naujaras_step');
             }} 
             size="lg"
             className="mt-4 h-12 px-8 text-base shadow-md"
