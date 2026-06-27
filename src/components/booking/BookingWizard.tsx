@@ -389,7 +389,14 @@ export function BookingWizard() {
             onDecoracionDetailsChange={handleDecoracionDetailsChange}
             onPackChange={handlePackChange}
             onPersonasExtraChange={handlePersonasExtraChange}
-            onNext={() => setCurrentStep(3)}
+            onNext={() => {
+              const hasZeroPrice = booking.selections.some(sel => !sel.price || sel.price <= 0);
+              if (hasZeroPrice || booking.selections.length === 0) {
+                setHubError(true);
+                return;
+              }
+              setCurrentStep(3);
+            }}
             onBack={() => setCurrentStep(1)}
           />
         );
