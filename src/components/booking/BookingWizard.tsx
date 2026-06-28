@@ -21,7 +21,8 @@ import {
   DecorationDetails,
   getRoomById,
   sendFinalRegistroWebhook,
-  fetchJornadaPrices
+  fetchJornadaPrices,
+  sendPreBloqueoWebhook
 } from "@/lib/bookingConfig";
 
 const STEPS = [
@@ -405,7 +406,10 @@ export function BookingWizard() {
           <StepClientData
             clientData={booking.clientData}
             onClientDataChange={handleClientDataChange}
-            onNext={() => setCurrentStep(4)}
+            onNext={() => {
+              sendPreBloqueoWebhook(booking);
+              setCurrentStep(4);
+            }}
             onBack={() => setCurrentStep(2)}
           />
         );
@@ -564,7 +568,10 @@ export function BookingWizard() {
             <StepClientData
               clientData={booking.clientData}
               onClientDataChange={handleClientDataChange}
-              onNext={() => setCurrentStep(4)}
+              onNext={() => {
+                sendPreBloqueoWebhook(booking);
+                setCurrentStep(4);
+              }}
               onBack={() => setCurrentStep(2)}
             />
           )}
