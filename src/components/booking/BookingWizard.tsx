@@ -561,9 +561,9 @@ export function BookingWizard() {
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="max-w-3xl mx-auto px-4 py-4">
           {bookingExpiration && currentStep >= 1 && currentStep <= 4 && (
-            <div className="flex items-center justify-center mb-6 bg-primary/10 text-primary py-2 px-4 rounded-full w-fit mx-auto animate-in slide-in-from-top-4">
-              <Clock className="w-4 h-4 mr-2" />
-              <span className="font-semibold text-sm">
+            <div className="flex items-center justify-center mb-8 bg-primary/15 border-2 border-primary/30 text-primary py-3 px-8 rounded-full w-full max-w-lg mx-auto animate-in slide-in-from-top-4 shadow-sm">
+              <Clock className="w-6 h-6 mr-3 animate-pulse" />
+              <span className="font-bold text-xl sm:text-2xl tracking-tight">
                 Tiempo restante: {Math.floor(timeLeft / 60000).toString().padStart(2, '0')}:
                 {Math.floor((timeLeft % 60000) / 1000).toString().padStart(2, '0')}
               </span>
