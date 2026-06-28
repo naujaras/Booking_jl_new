@@ -9,6 +9,7 @@ export const N8N_WEBHOOK_URL = "/api/n8n/a2e613d7-6690-47de-939d-9c479e95e24c";
 export const N8N_AVAILABILITY_URL = "/api/n8n/disponibilidad";
 export const N8N_PRICES_WEBHOOK_URL = "/api/n8n/854bd8ed-d900-4b55-a210-a08dac674651";
 export const N8N_BOOKING_WEBHOOK_URL = "/api/n8n/reservar";
+export const N8N_PRE_BLOQUEO_WEBHOOK_URL = "/api/n8n/69542d42-1933-467a-95cc-ab02940f122e";
 
 // Tipos de datos
 export type RoomId = "atico" | "estudio" | "habitacion";
@@ -576,8 +577,6 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
         jornada_id: primaryJornada,
         fecha_entrada: fechaEntrada,
         fecha_salida: fechaSalida,
-        fecha_entrada_es: fechaEntrada.split(" ")[0],
-        fecha_salida_es: fechaSalida.split(" ")[0],
         arrendador_nombre: booking.clientData.arrendadorNombre,
         arrendador_dni: booking.clientData.arrendadorDni,
         email: email,
@@ -667,6 +666,45 @@ export async function createBooking(booking: BookingData): Promise<{ success: bo
   } catch (error) {
     console.error("Error createBooking:", error);
     return { success: false, message: "No se pudo conectar con el sistema de reservas." };
+  }
+}
+
+export async function sendPreBloqueoWebhook(booking: BookingData) {
+  try {
+    let fechaEntrada = "", fechaSalida = "";
+    if (booking.selections && booking.selections.length > 0) {
+      const sorted = [...booking.selections].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      const firstS = sorted[0];
+      const lastS = sorted[sorted.length - 1];
+      const firstJ = getJornadaForRoom(booking.room!, firstS.jornada);
+      const lastJ = getJornadaForRoom(booking.room!, lastS.jornada);
+      
+      fechaEntrada = `${format(firstS.date, "d/MM/yyyy")} ${firstJ?.timeSlot.start || ''}`;
+      
+      const exitDate = new Date(lastS.date);
+      if (lastJ?.timeSlot.nextDay) exitDate.setDate(exitDate.getDate() + 1);
+      fechaSalida = `${format(exitDate, "d/MM/yyyy")} ${lastJ?.timeSlot.end || ''}`;
+    } else if (booking.date) {
+      const jornada = getJornadaForRoom(booking.room!, booking.jornada!);
+      fechaEntrada = `${format(booking.date, "d/MM/yyyy")} ${jornada?.timeSlot.start}`;
+      const exitDate = new Date(booking.date);
+      if (jornada?.timeSlot.nextDay) exitDate.setDate(exitDate.getDate() + 1);
+      fechaSalida = `${format(exitDate, "d/MM/yyyy")} ${jornada?.timeSlot.end}`;
+    }
+
+    // Call the webhook in the background without awaiting it heavily or failing if it errors
+    fetch(N8N_PRE_BLOQUEO_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        room_id: booking.room,
+        fecha_entrada: fechaEntrada,
+        fecha_salida: fechaSalida,
+        arrendador_nombre: booking.clientData.arrendadorNombre
+      })
+    }).catch(e => console.error("Error in pre-bloqueo fetch:", e));
+  } catch (error) {
+    console.error("Error pre-bloqueo:", error);
   }
 }
 
