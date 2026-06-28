@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { StepSearch } from "./StepSearch";
 import { StepExtras } from "./StepExtras";
 import { StepClientData } from "./StepClientData";
@@ -154,6 +155,56 @@ export function BookingWizard() {
   });
   const [paymentPendingVerification, setPaymentPendingVerification] = useState(false);
   const [hubError, setHubError] = useState(false);
+
+  const [bookingExpiration, setBookingExpiration] = useState<number | null>(() => {
+    const saved = sessionStorage.getItem('naujaras_expiration');
+    return saved ? parseInt(saved, 10) : null;
+  });
+  const [timeLeft, setTimeLeft] = useState<number>(0);
+  const [showInitialAlert, setShowInitialAlert] = useState(false);
+
+  const handleReset = () => {
+    setBooking(initialBookingData);
+    setCurrentStep(1);
+    setPaymentPendingVerification(false);
+    setBookingExpiration(null);
+    sessionStorage.removeItem('naujaras_expiration');
+    sessionStorage.removeItem('naujaras_alert_shown');
+  };
+
+  useEffect(() => {
+    if ((currentStep === 1 || currentStep === 2) && !bookingExpiration) {
+      const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutos
+      setBookingExpiration(expiresAt);
+      sessionStorage.setItem('naujaras_expiration', expiresAt.toString());
+      
+      if (!sessionStorage.getItem('naujaras_alert_shown')) {
+        setShowInitialAlert(true);
+        sessionStorage.setItem('naujaras_alert_shown', 'true');
+      }
+    }
+  }, [currentStep, bookingExpiration]);
+
+  useEffect(() => {
+    if (!bookingExpiration) return;
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const remaining = Math.max(0, bookingExpiration - now);
+      setTimeLeft(remaining);
+
+      if (remaining === 0 && currentStep >= 1 && currentStep <= 4) {
+        alert("Lo sentimos, su tiempo de reserva ha expirado. Empiece el proceso de nuevo.\n\nRecuerde que tiene 10 minutos para completar los datos antes de pasar a la pasarela de pago.");
+        handleReset();
+      }
+    }, 1000);
+
+    // Initial check
+    const now = Date.now();
+    setTimeLeft(Math.max(0, bookingExpiration - now));
+
+    return () => clearInterval(interval);
+  }, [bookingExpiration, currentStep]);
 
   useEffect(() => {
     sessionStorage.setItem('naujaras_booking', JSON.stringify(booking));
@@ -469,11 +520,7 @@ export function BookingWizard() {
     }
   };
 
-  const handleReset = () => {
-    setBooking(initialBookingData);
-    setCurrentStep(1);
-    setPaymentPendingVerification(false);
-  };
+
 
   const handlePaymentPendingVerification = async () => {
     try {
@@ -495,8 +542,33 @@ export function BookingWizard() {
 
   return (
     <div className="min-h-screen bg-background">
+      <AlertDialog open={showInitialAlert} onOpenChange={setShowInitialAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>⏱️ ¡Atención! Tiempo limitado</AlertDialogTitle>
+            <AlertDialogDescription className="text-base">
+              Dispone de <strong>10 minutos</strong> para completar su reserva. 
+              <br/><br/>
+              Pasado ese tiempo, por motivos de seguridad y para garantizar la disponibilidad del calendario a otros clientes, la sesión caducará y deberá volver a empezar.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowInitialAlert(false)}>Entendido</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="max-w-3xl mx-auto px-4 py-4">
+          {bookingExpiration && currentStep >= 1 && currentStep <= 4 && (
+            <div className="flex items-center justify-center mb-6 bg-primary/10 text-primary py-2 px-4 rounded-full w-fit mx-auto animate-in slide-in-from-top-4">
+              <Clock className="w-4 h-4 mr-2" />
+              <span className="font-semibold text-sm">
+                Tiempo restante: {Math.floor(timeLeft / 60000).toString().padStart(2, '0')}:
+                {Math.floor((timeLeft % 60000) / 1000).toString().padStart(2, '0')}
+              </span>
+            </div>
+          )}
           <div className="flex items-start justify-between">
             {STEPS.map((step, index) => (
               <div key={step.id} className="flex items-center flex-1 last:flex-none">
