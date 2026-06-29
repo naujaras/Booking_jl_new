@@ -415,57 +415,68 @@ export async function checkAvailability(date: Date, roomId: RoomId): Promise<Ava
   const room = getRoomById(roomId);
   
   try {
-    const dateFrom = format(date, 'yyyy-MM-dd');
-    const nextDay = new Date(date);
-    nextDay.setDate(nextDay.getDate() + 1);
-    const dateTo = format(nextDay, 'yyyy-MM-dd');
+    const fetchForDate = async (targetDate: Date) => {
+      const dateFrom = format(targetDate, 'yyyy-MM-dd');
+      const nextDay = new Date(targetDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      const dateTo = format(nextDay, 'yyyy-MM-dd');
 
-    const payload = {
-      action: 'check_availability',
-      room_id: roomId,
-      room_name: roomId === 'atico' ? 'Ático' : (roomId === 'estudio' ? 'Estudio' : 'Habitación'),
-      date_start: `${dateFrom}T00:00:00Z`,
-      date_end: `${dateTo}T23:59:59Z`
+      const payload = {
+        action: 'check_availability',
+        room_id: roomId,
+        room_name: roomId === 'atico' ? 'Ático' : (roomId === 'estudio' ? 'Estudio' : 'Habitación'),
+        date_start: `${dateFrom}T00:00:00Z`,
+        date_end: `${dateTo}T23:59:59Z`
+      };
+
+      const response = await fetch('/api/n8n/b4920b99-1724-4169-8630-50b4b795911d', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout ? AbortSignal.timeout(8000) : undefined
+      });
+
+      if (!response.ok) return [];
+
+      const rawText = await response.text();
+      let data = [];
+      if (rawText && rawText.trim() !== '') {
+        try { data = JSON.parse(rawText); } catch (e) { }
+      }
+      
+      let rawEvents: any[] = [];
+      if (Array.isArray(data)) rawEvents = data;
+      else if (data && data.busy && Array.isArray(data.busy)) rawEvents = data.busy;
+      else if (data && typeof data === 'object') rawEvents = [data];
+
+      return rawEvents.map(e => e.json ? e.json : e).map(e => {
+          const start = e.start ? (e.start.dateTime || e.start.date) : (e.inicio ? (e.inicio['fecha y hora'] || e.inicio.fecha || e.inicio.date || e.inicio.dateTime) : null);
+          const end = e.end ? (e.end.dateTime || e.end.date) : (e.fin ? (e.fin['fecha y hora'] || e.fin.fecha || e.fin.date || e.fin.dateTime) : null);
+          return { 
+              id: e.id || `busy-${Math.random()}`,
+              start: { dateTime: start || (typeof e.start === 'string' ? e.start : null) }, 
+              end: { dateTime: end || (typeof e.end === 'string' ? e.end : null) } 
+          };
+      }).filter(e => e.start.dateTime && e.end.dateTime);
     };
 
-    const response = await fetch('/api/n8n/b4920b99-1724-4169-8630-50b4b795911d', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout ? AbortSignal.timeout(8000) : undefined
+    // Obtener eventos del día seleccionado y del día siguiente para evitar solapamientos nocturnos
+    const [eventsDay1, eventsDay2] = await Promise.all([
+      fetchForDate(date),
+      fetchForDate(new Date(date.getTime() + 86400000)) // Next day
+    ]);
+
+    // Combinar y eliminar duplicados
+    const allEvents = [...eventsDay1, ...eventsDay2];
+    const uniqueEventsMap = new Map();
+    allEvents.forEach(e => {
+      // Usar start+end como clave secundaria si el id es un random temporal
+      const key = e.id.startsWith('busy-') ? `${e.start.dateTime}-${e.end.dateTime}` : e.id;
+      uniqueEventsMap.set(key, e);
     });
-
-    if (!response.ok) throw new Error(`Status ${response.status}`);
-
-    const rawText = await response.text();
-    let data;
-    if (rawText && rawText.trim() !== '') {
-      try {
-        data = JSON.parse(rawText);
-      } catch (e) {
-        console.warn('La respuesta de n8n no es un JSON válido, asumiendo sin eventos:', rawText);
-        data = [];
-      }
-    } else {
-      data = [];
-    }
     
-    console.log('Respuesta disponibilidad n8n en APP:', data);
-
-    let rawEvents: any[] = [];
-    if (Array.isArray(data)) rawEvents = data;
-    else if (data && data.busy && Array.isArray(data.busy)) rawEvents = data.busy;
-    else if (data && typeof data === 'object') rawEvents = [data];
-
-    let events: CalendarEvent[] = rawEvents.map(e => e.json ? e.json : e).map(e => {
-        const start = e.start ? (e.start.dateTime || e.start.date) : (e.inicio ? (e.inicio['fecha y hora'] || e.inicio.fecha || e.inicio.date || e.inicio.dateTime) : null);
-        const end = e.end ? (e.end.dateTime || e.end.date) : (e.fin ? (e.fin['fecha y hora'] || e.fin.fecha || e.fin.date || e.fin.dateTime) : null);
-        return { 
-            id: `busy-${Math.random()}`,
-            start: { dateTime: start || (typeof e.start === 'string' ? e.start : null) }, 
-            end: { dateTime: end || (typeof e.end === 'string' ? e.end : null) } 
-        };
-    }).filter(e => e.start.dateTime && e.end.dateTime);
+    const events = Array.from(uniqueEventsMap.values());
+    console.log('Eventos combinados (Día 1 + Día 2):', events);
 
     const availableJornadas = getAvailableJornadas(events, roomId, date);
     return {
