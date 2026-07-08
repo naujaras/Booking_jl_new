@@ -193,8 +193,8 @@ export function BookingWizard() {
       const remaining = Math.max(0, bookingExpiration - now);
       setTimeLeft(remaining);
 
-      if (remaining === 0 && currentStep >= 1 && currentStep <= 4) {
-        alert("Lo sentimos, su tiempo de reserva ha expirado. Empiece el proceso de nuevo.\n\nRecuerde que tiene 10 minutos para completar los datos antes de pasar a la pasarela de pago.");
+      if (remaining === 0 && currentStep >= 1 && currentStep <= 5) {
+        alert("Lo sentimos, su tiempo de reserva ha expirado. Empiece el proceso de nuevo.\n\nRecuerde que tiene 10 minutos para completar los datos o realizar el pago en la web.");
         handleReset();
       }
     }, 1000);
@@ -560,7 +560,7 @@ export function BookingWizard() {
 
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="max-w-3xl mx-auto px-4 py-4">
-          {bookingExpiration && currentStep >= 1 && currentStep <= 4 && (
+          {bookingExpiration && currentStep >= 1 && currentStep <= 5 && (
             <div className="flex items-center justify-center mb-8 bg-primary/15 border-2 border-primary/30 text-primary py-3 px-8 rounded-full w-full max-w-lg mx-auto animate-in slide-in-from-top-4 shadow-sm">
               <Clock className="w-6 h-6 mr-3 animate-pulse" />
               <span className="font-bold text-xl sm:text-2xl tracking-tight">
