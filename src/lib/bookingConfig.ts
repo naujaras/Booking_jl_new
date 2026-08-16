@@ -372,7 +372,7 @@ export async function fetchJornadaPrices(date: Date, roomId: RoomId): Promise<Jo
           weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
         })
       }),
-      signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined
+      signal: AbortSignal.timeout ? AbortSignal.timeout(20000) : undefined
     });
 
     if (!response.ok) {
@@ -433,7 +433,7 @@ export async function checkAvailability(date: Date, roomId: RoomId): Promise<Ava
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout ? AbortSignal.timeout(8000) : undefined
+        signal: AbortSignal.timeout ? AbortSignal.timeout(20000) : undefined
       });
 
       if (!response.ok) return [];
