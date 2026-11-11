@@ -341,6 +341,7 @@ export function formatDateTimeLocal(date: Date, time: string): string {
 
 export interface CalendarEvent {
   id: string;
+  summary?: string; // Título del evento en Google Calendar para identificar pre-reservas propias vs reservas ajenas
   start: { dateTime?: string; date?: string };
   end: { dateTime?: string; date?: string };
   json?: any; // Para compatibilidad con envoltorio n8n
@@ -454,6 +455,8 @@ export async function checkAvailability(date: Date, roomId: RoomId): Promise<Ava
           const end = e.end ? (e.end.dateTime || e.end.date) : (e.fin ? (e.fin['fecha y hora'] || e.fin.fecha || e.fin.date || e.fin.dateTime) : null);
           return { 
               id: e.id || `busy-${Math.random()}`,
+              // Conservamos el summary (título del evento) para distinguir la pre-reserva del propio cliente frente a reservas de terceros
+              summary: e.summary || e.titulo || '',
               start: { dateTime: start || (typeof e.start === 'string' ? e.start : null) }, 
               end: { dateTime: end || (typeof e.end === 'string' ? e.end : null) } 
           };
@@ -534,6 +537,60 @@ function getAvailableJornadas(events: CalendarEvent[], roomId: RoomId, date: Dat
 
     return !hasOverlap;
   }).map(j => j.id);
+}
+
+/**
+ * Validación de última milla (justo antes de ejecutar el pago en Stripe o Cajero/Monedero).
+ * ¿Por qué existe esta función?: Si el administrador elimina manualmente una [PRE-RESERVA] en Google Calendar
+ * o si la pre-reserva caduca y entra otro cliente a reservar el mismo tramo mientras el primer cliente
+ * sigue con la pantalla de pago abierta, debemos verificar que el hueco sigue libre para este cliente
+ * antes de permitirle pagar y firmar contrato.
+ */
+export async function verifySlotStillAvailableForClient(booking: BookingData): Promise<boolean> {
+  if (!booking.room) return false;
+
+  // Reunir todas las fechas y jornadas seleccionadas por el cliente
+  const selectionsToVerify = booking.selections && booking.selections.length > 0
+    ? booking.selections
+    : (booking.date && booking.jornada ? [{ date: booking.date, jornada: booking.jornada, price: booking.jornadaPrice || 0 }] : []);
+
+  if (selectionsToVerify.length === 0) return false;
+
+  const clientName = (booking.clientData?.arrendadorNombre || '').trim().toLowerCase();
+
+  try {
+    for (const sel of selectionsToVerify) {
+      const selDate = new Date(sel.date);
+      const availabilityResult = await checkAvailability(selDate, booking.room);
+
+      // Filtramos los eventos del calendario ignorando ÚNICAMENTE la [PRE-RESERVA] que pertenece a este mismo cliente.
+      // Cualquier reserva confirmada (=RESERVA) o pre-reserva a nombre de otra persona sí bloqueará el tramo.
+      const conflictingEvents = availabilityResult.events.filter(event => {
+        const title = (event.summary || '').toLowerCase();
+        const isPreReserva = title.includes('pre-reserva');
+        const isSameClient = clientName.length >= 2 && title.includes(clientName);
+
+        // Si es su propia pre-reserva, la ignoramos porque es el bloqueo que le está guardando el sitio a él/ella
+        if (isPreReserva && isSameClient) {
+          return false;
+        }
+        // Cualquier otro evento en ese horario es un conflicto real (alguien más ha reservado)
+        return true;
+      });
+
+      const availableAfterFilter = getAvailableJornadas(conflictingEvents, booking.room, selDate);
+      if (!availableAfterFilter.includes(sel.jornada)) {
+        console.warn(`Conflicto detectado justo antes del pago: la jornada ${sel.jornada} del ${format(selDate, 'dd/MM/yyyy')} ya ha sido ocupada por otro cliente.`);
+        return false;
+      }
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error al verificar disponibilidad de última hora antes del pago:', error);
+    // Si falla la red puntualmente no bloqueamos por falso positivo, pero si responde con eventos los valida
+    return true;
+  }
 }
 
 // Función para crear la pre-reserva e iniciar el contrato
