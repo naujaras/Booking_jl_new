@@ -12,7 +12,8 @@ import {
   getJornadaForRoom,
   getEffectiveEmail,
   createBooking,
-  sendFinalRegistroWebhook
+  sendFinalRegistroWebhook,
+  verifySlotStillAvailableForClient
 } from "@/lib/bookingConfig";
 
 const N8N_STRIPE_WEBHOOK = "/api/n8n/6712f3f0-db51-4e53-8f97-7f9ce46d3119";
@@ -34,7 +35,8 @@ interface StepPaymentProps {
 }
 
 type PaymentMethod = "card" | "bizum" | "transfer" | "cajero" | null;
-type PaymentState = "selecting" | "processing" | "waiting" | "timeout" | "completed" | "error";
+// Se añade el estado "slot_taken" para bloquear el proceso de pago si el tramo horario fue ocupado por otro cliente mientras tanto
+type PaymentState = "selecting" | "processing" | "waiting" | "timeout" | "completed" | "error" | "slot_taken";
 
 interface PaymentStatusResponse {
   payment_status?: string;
@@ -92,6 +94,14 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
 
     const generateBooking = async () => {
       try {
+        // Comprobación preventiva en el calendario antes de registrar la pre-reserva final en Excel/Stripe
+        const stillAvailable = await verifySlotStillAvailableForClient(booking);
+        if (!stillAvailable) {
+          setInitStage("ready");
+          setPaymentState("slot_taken");
+          return;
+        }
+
         const response = await createBooking(booking);
 
         if (response.success) {
@@ -210,6 +220,13 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
     setAttempts(0);
 
     try {
+      // Validación en tiempo real contra Google Calendar justo antes de abrir la pasarela de Stripe
+      const stillAvailable = await verifySlotStillAvailableForClient(booking);
+      if (!stillAvailable) {
+        setPaymentState("slot_taken");
+        return;
+      }
+
       const paymentUrl = booking.paymentUrl;
 
       if (paymentUrl && paymentUrl !== "undefined") {
@@ -260,11 +277,38 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
         </div>
         <div className="space-y-2">
           <h2 className="text-2xl font-serif font-semibold text-foreground">
-            {selectedMethod === "cajero" ? "Comprobando su saldo..." : "Generando enlace de pago..."}
+            {selectedMethod === "cajero" ? "Comprobando disponibilidad y saldo..." : "Verificando disponibilidad y preparando pago..."}
           </h2>
           <p className="text-muted-foreground">
-            {selectedMethod === "cajero" ? "Por favor, espera mientras verificamos tu monedero" : "Por favor, espera mientras preparamos tu pago seguro"}
+            {selectedMethod === "cajero" ? "Por favor, espera mientras verificamos el calendario y tu monedero" : "Por favor, espera mientras comprobamos que el tramo sigue libre"}
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Pantalla de bloqueo de seguridad si otra persona reservó el tramo mientras el usuario estaba en el proceso
+  if (paymentState === "slot_taken") {
+    return (
+      <div className="space-y-8 text-center py-12 animate-in fade-in duration-300">
+        <div className="mx-auto w-24 h-24 rounded-full flex items-center justify-center bg-destructive/10">
+          <AlertTriangle className="h-12 w-12 text-destructive" />
+        </div>
+        <div className="space-y-3 max-w-md mx-auto">
+          <h2 className="text-2xl font-serif font-semibold text-foreground">
+            Tramo horario ya no disponible
+          </h2>
+          <p className="text-muted-foreground text-base leading-relaxed">
+            Lo sentimos: mientras completabas los pasos de la reserva, este día y tramo horario acaban de ser ocupados y ya no están disponibles.
+          </p>
+          <p className="text-sm font-medium text-foreground bg-muted/50 p-3 rounded-lg">
+            No se te ha realizado ningún cargo. Por favor, vuelve al inicio para consultar otras fechas o tramos libres.
+          </p>
+        </div>
+        <div className="flex justify-center pt-2">
+          <Button onClick={onReset} className="h-12 px-8 text-base font-medium shadow-md">
+            Volver al calendario y elegir otra fecha
+          </Button>
         </div>
       </div>
     );
@@ -500,6 +544,13 @@ export function StepPayment({ booking, onBack, onNext, onReset, onPendingVerific
       setPaymentState("processing");
 
       try {
+        // Comprobación en tiempo real del calendario antes de descontar saldo del monedero
+        const stillAvailable = await verifySlotStillAvailableForClient(booking);
+        if (!stillAvailable) {
+          setPaymentState("slot_taken");
+          return;
+        }
+
         // --- WEBHOOK DE n8n PARA DESCONTAR SALDO ---
         // Se espera que n8n verifique el saldo, lo reste, y devuelva { "success": true }
         const resp = await fetch("/api/n8n/pagar-cajero", { // Cambiado a NPfusf
